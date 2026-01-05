@@ -118,7 +118,8 @@ function ApplyVoice() {
 
                 try {
                     console.log("Uploading to backend...");
-                    const response = await fetch('http://127.0.0.1:8000/upload_voice', {
+                    // Use relative path via Nginx proxy (/api/stt/ -> localhost:8000/)
+                    const response = await fetch('/api/stt/upload_voice', {
                         method: 'POST',
                         body: formData,
                     });
