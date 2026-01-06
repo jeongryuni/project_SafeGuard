@@ -164,7 +164,7 @@ class UnifiedComplaintManager:
         """RAG 서버에 분류 요청을 보내 기관명을 받아옴"""
         try:
             # Docker 네트워크 내의 RAG 서버 주소
-            rag_url = "http://ai-rag:8001/classify"
+            rag_url = "http://127.0.0.1:8001/classify"
             response = requests.post(rag_url, json={"text": text}, timeout=30)
             if response.status_code == 200:
                 result = response.json()
