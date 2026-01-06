@@ -112,7 +112,6 @@ function ApplyVoice() {
             };
 
             recorder.onstop = async () => {
-                alert("DEBUG: 녹음 종료 이벤트 발생 (onstop)"); // Debug Alert 3
                 console.log("Recording stopped, processing chunks...");
                 const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
                 chunksRef.current = [];
@@ -121,7 +120,8 @@ function ApplyVoice() {
                 // --- [Validation] Check if text is empty ---
                 const recordedText = realtimeTextRef.current;
                 if (!recordedText || recordedText.trim() === "") {
-                    alert("음성 인식이 되지 않았습니다.\n녹음을 다시 해주세요.");
+                    setAnalysisResult(null); // Clear previous results
+                    alert("음성 인식이 되지 않았습니다.\n다시 입력해주세요.");
                     return; // Stop here, do not upload
                 }
 
@@ -134,7 +134,6 @@ function ApplyVoice() {
                 setError(null);
 
                 try {
-                    alert("DEBUG: 서버로 업로드 시작"); // Debug Alert 4
                     console.log("Uploading to backend...");
                     // Use relative path via Nginx proxy (/api/stt/ -> localhost:8000/)
                     const response = await fetch('/api/stt/upload_voice', {

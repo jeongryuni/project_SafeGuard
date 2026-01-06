@@ -146,9 +146,7 @@ class UnifiedComplaintManager:
         """
         # 1. 아예 무시할 고정 멘트들
         hallucination_keywords = [
-            "시청해주셔서 감사합니다", "구독과 좋아요", "90초", "MBC", "SBS", "YTN",
-            "자막 제작", "저작권", "배경음악", "fitting", "Deadler", "separates",
-            "hijim", "Jazz", "Basically", "State Jail", "fed"
+            ""
         ]
         
         for hk in hallucination_keywords:
@@ -167,7 +165,7 @@ class UnifiedComplaintManager:
         try:
             # Docker 네트워크 내의 RAG 서버 주소
             rag_url = "http://ai-rag:8001/classify"
-            response = requests.post(rag_url, json={"text": text}, timeout=10)
+            response = requests.post(rag_url, json={"text": text}, timeout=30)
             if response.status_code == 200:
                 result = response.json()
                 agency = result.get("agency", "기타")
