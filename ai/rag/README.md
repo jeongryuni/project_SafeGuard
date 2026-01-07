@@ -19,24 +19,26 @@
 
 ---
 
-## 3. 시스템 실행 순서 (Execution Workflow)
+## 3. 파일 실행 순서 및 워크플로우 (File Execution Sequence)
 
-시스템은 크게 **데이터 적재 단계**와 **실시간 서비스 단계**로 나뉘어 동작합니다.
+### 3.1 전체 흐름 요약 (Visual Flow)
+> **입력(`app.py`)** → **의도 파악(`classification_service.py`)** → **법령 검색(`query.py`)** → **가중치 판정(`classification_service.py`)** → **응답(`app.py`)**
 
-### STEP 1: 데이터 적재 (Data Ingestion Phase)
-1. **`ingest.py` 실행**: 원본 PDF 법령 데이터를 읽어 들입니다.
-2. **텍스트 추출 및 분할**: `pdfplumber`를 이용해 텍스트를 추출하고 의미 단위로 쪼갭니다.
-3. **인덱싱**: 
-   - `milvus_client.py`를 호출하여 **Milvus(Vector DB)**에 임베딩 데이터를 저장합니다.
-   - 키워드 검색을 위한 **BM25 인덱스**를 생성하여 `rag_data/bm25_index.pkl` 파일로 저장합니다.
+---
 
-### STEP 2: 실시간 분석 서비스 (Runtime Service Phase)
-1. **서버 구동**: `app.py`가 실행되며 FastAPI 서버가 8001번 포트에서 대기합니다.
-2. **요청 수신**: 프론트엔드에서 민원 텍스트를 담아 `/classify` 엔드포인트로 POST 요청을 보냅니다.
-3. **의도 분석**: `classification_service.py`가 가동되어 질문 내 핵심 키워드를 선제적으로 파악합니다.
-4. **하이브리드 검색**: `query.py`가 벡터 유사도 검색과 키워드 검색을 동시에 수행하여 관련 법령 리스트를 뽑아옵니다.
-5. **가중치 계산**: 핵심 알고리즘(Weighting Algorithm)이 작동하여 가장 적합한 기관을 확률적으로 계산합니다.
-6. **결과 반환**: 최종 기관 정보, 판단 근거, 참조 법령 등을 JSON 형태로 응답합니다.
+### 3.2 단계별 상세 실행 순서
+
+#### [Phase 1] 데이터 준비 단계 (초기 1회 또는 데이터 업데이트 시)
+1. **`ingest.py`**: 시스템 구동을 위한 최우선 실행 파일입니다.
+   - 내부적으로 `milvus_client.py`를 참조하여 DB 연결을 초기화합니다.
+   - `rag_data/`의 PDF를 읽어 벡터 DB와 BM25 인덱스를 생성합니다.
+
+#### [Phase 2] 실시간 분석 서비스 (Runtime Phase)
+1. **`app.py` (FastAPI Server)**: 시스템의 입구입니다. `logging_config.py`를 로드하여 서버를 시작합니다.
+2. **`classification_service.py` (의도 분석 시작)**: 사용자의 질문이 들어오면 가장 먼저 호출되어 핵심 키워드를 선추출합니다.
+3. **`query.py` (하이브리드 검색)**: 분석 엔진의 요청을 받아 Milvus와 BM25에서 관련 법령 후보군을 가져옵니다.
+4. **`classification_service.py` (가중치 판정)**: 가져온 후보군에 개편된 가중치 알고리즘을 적용하여 최종 기관을 확정합니다.
+5. **`app.py` (결과 반환)**: 확정된 데이터를 JSON 형식으로 사용자에게 최종 응답합니다.
 
 ---
 
