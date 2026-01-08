@@ -1,22 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complaintsAPI, getToken } from '../utils/api';
+import { complaintsAPI, getToken, analyzeText } from '../utils/api';
 
 function ApplyText() {
     const navigate = useNavigate();
     const mapRef = useRef(null);
-
     const [formData, setFormData] = useState({
         title: '',
         content: '',
         isPublic: true,
-        location: {
-            lat: 37.5665,
-            lng: 126.9780,
-            address: '서울특별시 중구'
-        }
+        location: null
     });
     const [loading, setLoading] = useState(false);
+    const [analyzing, setAnalyzing] = useState(false);
+    const [aiResult, setAiResult] = useState(null);
     const [error, setError] = useState('');
     const [currentStep, setCurrentStep] = useState(1);
 
@@ -71,11 +68,35 @@ function ApplyText() {
     useEffect(() => {
         if (formData.title) setCurrentStep(2);
         if (formData.title && formData.content) setCurrentStep(3);
-        if (formData.title && formData.content && formData.location.address) setCurrentStep(4);
+        if (formData.title && formData.content && formData.location) setCurrentStep(4);
     }, [formData]);
 
+    const handleAnalyze = async () => {
+
+        const result = await analyzeText(formData.content);
+        console.log('AI RESULT RAW:', result);
+        setAiResult(result);
+
+        if (!formData.content || formData.content.length < 10) {
+            alert('민원 내용을 10자 이상 입력해주세요.');
+            return;
+        }
+
+
+        setAnalyzing(true);
+        setError(''); // Clear previous errors
+        try {
+            const result = await analyzeText(formData.content);
+            setAiResult(result);
+        } catch (err) {
+            alert('AI 분석에 실패했습니다: ' + err.message);
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!getToken()) {
             alert('로그인이 필요합니다.');
             navigate('/login');
@@ -89,7 +110,9 @@ function ApplyText() {
         setError('');
         try {
             const result = await complaintsAPI.create({
-                category: '일반',
+                category: aiResult?.category ?? '기타',
+                agencyName: aiResult?.agency_name ?? null,
+                agencyCode: aiResult?.agency_code ?? null,
                 title: formData.title,
                 content: formData.content,
                 isPublic: formData.isPublic,
@@ -107,7 +130,7 @@ function ApplyText() {
     const steps = [
         { num: 1, label: '제목 입력', done: !!formData.title },
         { num: 2, label: '내용 작성', done: !!formData.content },
-        { num: 3, label: '위치 선택', done: true },
+        { num: 3, label: '위치 선택', done: !!formData.location },
         { num: 4, label: '접수 완료', done: false }
     ];
 
@@ -266,7 +289,11 @@ function ApplyText() {
                                     gap: '8px'
                                 }}>
                                     <span style={{ fontSize: '1.1rem' }}>📍</span>
-                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
+                                    <span style={{ color: '#16a34a', fontWeight: '500' }}>
+                                        {formData.location
+                                            ? formData.location.address
+                                            : '위치를 선택해주세요'}
+                                    </span>
                                 </div>
                                 <div
                                     ref={mapRef}
@@ -316,26 +343,28 @@ function ApplyText() {
                                 </div>
                             </div>
 
-                            {/* 제출 버튼 */}
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                style={{
-                                    width: '100%',
-                                    padding: '18px',
-                                    background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '14px',
-                                    fontSize: '1.1rem',
-                                    fontWeight: '700',
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                {loading ? '접수 중...' : '🚀 민원 접수하기'}
-                            </button>
+                            <div style={{ marginBottom: '10px' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleAnalyze}
+                                    disabled={analyzing}
+                                    style={{
+                                        width: '100%',
+                                        padding: '18px',
+                                        background: analyzing ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '14px',
+                                        fontSize: '1.1rem',
+                                        fontWeight: '700',
+                                        cursor: analyzing ? 'not-allowed' : 'pointer',
+                                        boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                                        transition: 'all 0.3s'
+                                    }}
+                                >
+                                    {analyzing ? '분석 중...' : '🔍 AI 분석하기'}
+                                </button>
+                            </div>
                         </form>
                     </div>
 
@@ -369,30 +398,57 @@ function ApplyText() {
                                     📊 민원 유형 분석
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
-                                    {formData.content.length > 10 ? '분석 가능' : '내용을 입력하세요'}
+                                    {aiResult
+                                        ? (aiResult.category || '유형 분석 실패')
+                                        : (formData.content.length > 10 ? '분석 가능' : '내용을 입력하세요')}
                                 </div>
                             </div>
                             <div style={{
                                 padding: '18px',
                                 backgroundColor: '#fdf4ff',
-                                borderRadius: '12px'
+                                borderRadius: '12px',
+                                marginBottom: '20px'
                             }}>
                                 <div style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '600', marginBottom: '8px' }}>
                                     🏛️ 처리 기관 분류
                                 </div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', textAlign: 'center' }}>
-                                    {formData.content.length > 10 ? '자동 배정 예정' : '-'}
+                                    {aiResult ? aiResult.agency_name : (formData.content.length > 10 ? '자동 배정 예정' : '-')}
                                 </div>
                             </div>
-                            <div style={{
-                                marginTop: '20px',
-                                padding: '14px',
-                                backgroundColor: '#f0fdf4',
-                                borderRadius: '12px',
-                                textAlign: 'center'
-                            }}>
-                                <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ AI가 민원을 자동으로 분류합니다</span>
-                            </div>
+
+                            {/* 민원 접수하기 버튼 (여기로 이동됨) */}
+                            <button
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    background: loading ? '#94a3b8' : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    fontWeight: '700',
+                                    cursor: loading ? 'not-allowed' : 'pointer',
+                                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {loading ? '접수 중...' : '🚀 민원 접수하기'}
+                            </button>
+
+                            {!aiResult && (
+                                <div style={{
+                                    marginTop: '20px',
+                                    padding: '14px',
+                                    backgroundColor: '#f0fdf4',
+                                    borderRadius: '12px',
+                                    textAlign: 'center'
+                                }}>
+                                    <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ AI가 민원을 자동으로 분류합니다</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
