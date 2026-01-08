@@ -117,30 +117,12 @@ export const agenciesAPI = {
     },
 };
 
-// Text Analysis API (RAG Service)
-const RAG_API_BASE = 'http://127.0.0.1:8001';
-
+// Text Analysis API (RAG Service 호출 - Backend Proxy 방식)
 export const analyzeText = async (text) => {
-    try {
-        const response = await fetch(`${RAG_API_BASE}/classify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.detail || '텍스트 분석 중 오류가 발생했습니다.');
-        }
-
-        return data;
-    } catch (error) {
-        console.error('AI Analysis failed:', error);
-        throw error;
-    }
+    return apiRequest('/rag/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+    });
 };
 
 // Image Analysis API
