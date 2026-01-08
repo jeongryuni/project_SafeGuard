@@ -8,18 +8,27 @@ DROP TABLE IF EXISTS post_like CASCADE;
 DROP TABLE IF EXISTS complaint CASCADE;
 DROP TABLE IF EXISTS app_user CASCADE;
 DROP TABLE IF EXISTS agency CASCADE;
-
 -- ENUM 타입 삭제 및 생성
-DO $$ BEGIN
-    DROP TYPE IF EXISTS agency_task_status CASCADE;
-    DROP TYPE IF EXISTS complaint_status CASCADE;
-    DROP TYPE IF EXISTS user_role CASCADE;
-EXCEPTION WHEN OTHERS THEN END $$;
-
+DO $$ BEGIN DROP TYPE IF EXISTS agency_task_status CASCADE;
+DROP TYPE IF EXISTS complaint_status CASCADE;
+DROP TYPE IF EXISTS user_role CASCADE;
+EXCEPTION
+WHEN OTHERS THEN
+END $$;
 CREATE TYPE user_role AS ENUM ('USER', 'ADMIN', 'AGENCY');
-CREATE TYPE complaint_status AS ENUM ('RECEIVED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED', 'CANCELLED');
-CREATE TYPE agency_task_status AS ENUM ('ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'REJECTED');
-
+CREATE TYPE complaint_status AS ENUM (
+    'RECEIVED',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'REJECTED',
+    'CANCELLED'
+);
+CREATE TYPE agency_task_status AS ENUM (
+    'ASSIGNED',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'REJECTED'
+);
 -- 1. agency
 CREATE TABLE agency (
     agency_no BIGSERIAL PRIMARY KEY,
@@ -28,7 +37,6 @@ CREATE TABLE agency (
     region_code VARCHAR(20),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-
 -- 2. app_user
 CREATE TABLE app_user (
     user_no BIGSERIAL PRIMARY KEY,
@@ -43,7 +51,6 @@ CREATE TABLE app_user (
     role user_role NOT NULL DEFAULT 'USER',
     agency_no BIGINT REFERENCES agency(agency_no)
 );
-
 -- 3. complaint
 CREATE TABLE complaint (
     complaint_no BIGSERIAL PRIMARY KEY,
@@ -65,7 +72,6 @@ CREATE TABLE complaint (
     like_count INTEGER DEFAULT 0,
     answer TEXT
 );
-
 CREATE TABLE complaint_like (
     like_id BIGSERIAL PRIMARY KEY,
     complaint_no BIGINT NOT NULL REFERENCES complaint(complaint_no) ON DELETE CASCADE,
@@ -73,7 +79,6 @@ CREATE TABLE complaint_like (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(complaint_no, user_no)
 );
-
 -- 4. 기타 보조 테이블
 CREATE TABLE spatial_feature (
     feature_id BIGSERIAL PRIMARY KEY,

@@ -23,10 +23,29 @@ const apiRequest = async (endpoint, options = {}) => {
         headers,
     });
 
-    const data = await response.json();
+    let data;
+    const contentType = response.headers.get('content-type');
+
+    if (contentType && contentType.includes('application/json')) {
+        try {
+            data = await response.json();
+        } catch (e) {
+            console.error('Failed to parse JSON response:', e);
+            data = { error: 'Invalid JSON response from server' };
+        }
+    } else {
+        // Handle non-JSON response (e.g. text/plain or empty)
+        const text = await response.text();
+        try {
+            // Sometimes JSON comes without header
+            data = JSON.parse(text);
+        } catch (e) {
+            data = { message: text || response.statusText };
+        }
+    }
 
     if (!response.ok) {
-        throw new Error(data.error || data.message || '요청 처리 중 오류가 발생했습니다.');
+        throw new Error(data.error || data.message || `Request failed with status ${response.status}`);
     }
 
     return data;

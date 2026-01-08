@@ -273,4 +273,75 @@ public class SeedController {
                     "type", e.getClass().getName()));
         }
     }
+
+    @PostMapping("/fix-agency-mapping")
+    public ResponseEntity<Map<String, Object>> fixAgencyMapping() {
+        try {
+            log.info("[Seed] Fixing agency mappings for dummy data...");
+            int updatedCount = 0;
+
+            // 1. Traffic/Safety -> Police (경찰청)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '경찰청')
+                        WHERE category IN ('교통', '경찰·검찰') AND agency_no IS NULL
+                    """);
+
+            // 2. Road/Housing -> MOLIT (국토교통부)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '국토교통부')
+                        WHERE category IN ('도로', '주택·건축') AND agency_no IS NULL
+                    """);
+
+            // 3. Admin/Safety -> MOIS (행정안전부)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '행정안전부')
+                        WHERE category = '행정·안전' AND agency_no IS NULL
+                    """);
+
+            // 4. Education -> MOE (교육부)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '교육부')
+                        WHERE category = '교육' AND agency_no IS NULL
+                    """);
+
+            // 5. Health -> MOHW (보건복지부)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '보건복지부')
+                        WHERE category = '보건' AND agency_no IS NULL
+                    """);
+
+            // 6. Environment -> Environment Ministry (기후에너지환경부)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '기후에너지환경부')
+                        WHERE category = '환경' AND agency_no IS NULL
+                    """);
+
+            // 7. Industry -> Finance (기획재정부)
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '기획재정부')
+                        WHERE category = '산업·통상' AND agency_no IS NULL
+                    """);
+
+            // 8. Default others -> Seoul (서울특별시) as fallback for Local
+            updatedCount += jdbcTemplate.update("""
+                        UPDATE complaint
+                        SET agency_no = (SELECT agency_no FROM agency WHERE agency_name = '서울특별시')
+                        WHERE agency_no IS NULL
+                    """);
+
+            log.info("[Seed] Agency mapping fix completed. Updated {} rows.", updatedCount);
+            return ResponseEntity.ok(Map.of("message", "Agency mappings updated", "count", updatedCount));
+
+        } catch (Exception e) {
+            log.error("[Seed] Failed to fix agency mappings", e);
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
 }

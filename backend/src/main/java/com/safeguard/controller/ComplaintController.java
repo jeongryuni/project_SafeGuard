@@ -68,6 +68,7 @@ public class ComplaintController {
                     m.put("createdDate", c.getCreatedDate() != null ? c.getCreatedDate().toString() : null);
                     m.put("address", c.getAddress());
                     m.put("authorName", "익명사용자");
+                    m.put("agencyName", c.getAgencyName() != null ? c.getAgencyName() : "미지정");
                     m.put("likeCount", c.getLikeCount() != null ? c.getLikeCount() : 0);
                     m.put("isPublic", c.getIsPublic() != null ? c.getIsPublic() : true);
                     return m;

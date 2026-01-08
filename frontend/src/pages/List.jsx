@@ -361,11 +361,11 @@ function List() {
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>
                                                 <span style={{
                                                     padding: '4px 10px',
-                                                    backgroundColor: c.agencyName ? '#e0f2fe' : '#f1f5f9',
+                                                    backgroundColor: c.agencyName && c.agencyName !== '미지정' ? '#e0f2fe' : '#f1f5f9',
                                                     borderRadius: '6px',
                                                     fontSize: '0.8rem',
-                                                    color: c.agencyName ? '#0369a1' : '#94a3b8'
-                                                }}>{c.agencyName || '미지정'}</span>
+                                                    color: c.agencyName && c.agencyName !== '미지정' ? '#0369a1' : '#94a3b8'
+                                                }}>{c.agencyName}</span>
                                             </td>
                                             <td style={{ padding: '18px 20px', borderBottom: '1px solid #f1f5f9' }}>{getStatusBadge(c.status)}</td>
                                             <td style={{ padding: '18px 20px', color: '#94a3b8', fontSize: '0.9rem', borderBottom: '1px solid #f1f5f9' }}>{formatDate(c.createdDate)}</td>
