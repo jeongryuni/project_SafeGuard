@@ -20,6 +20,8 @@
             "environment": [],
             "mountPoints": [],
             "volumesFrom": [],
+            "memory": 512,
+            "memoryReservation": 256,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -47,6 +49,8 @@
             "environment": [],
             "mountPoints": [],
             "volumesFrom": [],
+            "memory": 3072,
+            "memoryReservation": 2048,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -56,9 +60,7 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "systemControls": [],
-            "memory": 6144,
-            "memoryReservation": 2048
+            "systemControls": []
         },
         {
             "name": "safeguard-ai-stt",
@@ -76,6 +78,8 @@
             "environment": [],
             "mountPoints": [],
             "volumesFrom": [],
+            "memory": 4096,
+            "memoryReservation": 2048,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -85,9 +89,7 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "systemControls": [],
-            "memory": 4096,
-            "memoryReservation": 1024
+            "systemControls": []
         },
         {
             "name": "safeguard-backend",
@@ -114,10 +116,16 @@
                 {
                     "name": "SPRING_DATASOURCE_PASSWORD",
                     "value": "postgres"
+                },
+                {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": "-Xms256m -Xmx1024m"
                 }
             ],
             "mountPoints": [],
             "volumesFrom": [],
+            "memory": 2048,
+            "memoryReservation": 1024,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -127,9 +135,7 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "systemControls": [],
-            "memory": 2048,
-            "memoryReservation": 1024
+            "systemControls": []
         },
         {
             "name": "milvus-minio",
@@ -169,6 +175,8 @@
             ],
             "mountPoints": [],
             "volumesFrom": [],
+            "memory": 1024,
+            "memoryReservation": 512,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -201,6 +209,8 @@
                 "--data-dir",
                 "/etcd"
             ],
+            "memory": 512,
+            "memoryReservation": 256,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -255,6 +265,8 @@
                     "condition": "START"
                 }
             ],
+            "memory": 4096,
+            "memoryReservation": 2048,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -263,9 +275,7 @@
                     "awslogs-region": "ap-northeast-2",
                     "awslogs-stream-prefix": "ecs"
                 }
-            },
-            "memory": 6144,
-            "memoryReservation": 2048
+            }
         },
         {
             "name": "safeguard-ai-rag",
@@ -296,6 +306,8 @@
                     "condition": "START"
                 }
             ],
+            "memory": 1024,
+            "memoryReservation": 512,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
