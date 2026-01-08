@@ -16,9 +16,10 @@ public interface ComplaintMapper {
             @Param("status") String status,
             @Param("region") String region,
             @Param("sort") String sort,
-            @Param("order") String order);
+            @Param("order") String order,
+            @Param("agencyNo") Long agencyNo);
 
-    List<Map<String, Object>> getStats();
+    List<Map<String, Object>> getStats(@Param("agencyNo") Long agencyNo);
 
     List<ComplaintDTO> getTopLiked();
 

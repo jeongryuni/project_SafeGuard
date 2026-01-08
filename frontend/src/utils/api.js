@@ -46,6 +46,10 @@ export const authAPI = {
         });
         if (data.token) {
             setToken(data.token);
+            if (data.user) {
+                localStorage.setItem('role', data.user.role);
+                localStorage.setItem('userId', data.user.userId);
+            }
         }
         return data;
     },

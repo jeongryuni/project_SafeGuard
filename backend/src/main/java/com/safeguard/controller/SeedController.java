@@ -20,12 +20,59 @@ public class SeedController {
 
     private final ComplaintMapper complaintMapper;
     private final UserMapper userMapper;
+    private final com.safeguard.mapper.AgencyMapper agencyMapper;
 
     @PostMapping("/reset")
     public ResponseEntity<Map<String, String>> resetData() {
         complaintMapper.deleteAllLikes();
         complaintMapper.deleteAllComplaints();
         return ResponseEntity.ok(Map.of("message", "All data deleted"));
+    }
+
+    @PostMapping("/agencies")
+    public ResponseEntity<Map<String, Object>> seedAgencies() {
+        int count = 0;
+
+        // 1) LOCAL Agencies (17 Regions)
+        String[][] localAgencies = {
+                { "서울특별시", "11" }, { "부산광역시", "26" }, { "대구광역시", "27" }, { "인천광역시", "28" },
+                { "광주광역시", "29" }, { "대전광역시", "30" }, { "울산광역시", "31" }, { "세종특별자치시", "50" },
+                { "경기도", "41" }, { "강원특별자치도", "42" }, { "충청북도", "43" }, { "충청남도", "44" },
+                { "전북특별자치도", "45" }, { "전라남도", "46" }, { "경상북도", "47" }, { "경상남도", "48" },
+                { "제주특별자치도", "49" }
+        };
+
+        for (String[] data : localAgencies) {
+            if (!agencyMapper.existsByNameAndRegion(data[0], data[1])) {
+                com.safeguard.entity.Agency agency = new com.safeguard.entity.Agency();
+                agency.setAgencyName(data[0]);
+                agency.setRegionCode(data[1]);
+                agency.setAgencyType("LOCAL");
+                agencyMapper.insertAgency(agency);
+                count++;
+            }
+        }
+
+        // 2) CENTRAL Agencies
+        String[] centralAgencies = {
+                "경찰청", "국토교통부", "고용노동부", "국방부", "국민권익위원회", "식품의약품안전처",
+                "대검찰청", "기획재정부", "행정안전부", "보건복지부", "과학기술정보통신부", "국세청",
+                "기후에너지환경부", "법무부", "공정거래위원회", "교육부", "해양수산부", "농림축산식품부",
+                "소방청", "인사혁신처", "기타"
+        };
+
+        for (String name : centralAgencies) {
+            if (!agencyMapper.existsByNameAndRegion(name, null)) {
+                com.safeguard.entity.Agency agency = new com.safeguard.entity.Agency();
+                agency.setAgencyName(name);
+                agency.setRegionCode(null);
+                agency.setAgencyType("CENTRAL");
+                agencyMapper.insertAgency(agency);
+                count++;
+            }
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Agencies seeded successfully", "count", count));
     }
 
     @PostMapping("/complaints")

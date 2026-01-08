@@ -28,8 +28,14 @@
             SELECT *, ROW_NUMBER() OVER (ORDER BY created_date ASC) as seq_no
             FROM complaint
         )
-        SELECT * FROM OrderedComplaints
+        SELECT c.* FROM OrderedComplaints c
+        <if test="agencyNo != null">
+            JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+        </if>
         <where>
+            <if test="agencyNo != null">
+                AND ca.agency_no = #{agencyNo}
+            </if>
             <if test="search != null and search != ''">
                 AND (title LIKE CONCAT('%', #{search}, '%') OR content LIKE CONCAT('%', #{search}, '%'))
             </if>
@@ -59,9 +65,13 @@
     <select id="getStats" resultType="map">
         SELECT 
             COUNT(*) as total,
-            COUNT(CASE WHEN status = 'IN_PROGRESS' THEN 1 END) as processing,
-            COUNT(CASE WHEN status = 'COMPLETED' THEN 1 END) as completed
-        FROM complaint
+            COUNT(CASE WHEN c.status = 'IN_PROGRESS' THEN 1 END) as processing,
+            COUNT(CASE WHEN c.status = 'COMPLETED' THEN 1 END) as completed
+        FROM complaint c
+        <if test="agencyNo != null">
+            JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
+            WHERE ca.agency_no = #{agencyNo}
+        </if>
     </select>
 
     <select id="getTopLiked" resultMap="ComplaintResultMap">

@@ -36,7 +36,20 @@ public class ComplaintController {
             @RequestParam(defaultValue = "complaint_no") String sort,
             @RequestParam(defaultValue = "ASC") String order) {
 
-        List<ComplaintDTO> complaints = complaintMapper.findAll(search, category, status, region, sort, order);
+        // Dynamically get the logged-in user's agencyNo from security context
+        Long agencyNo = null;
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
+            String userId = auth.getName();
+            com.safeguard.dto.UserDTO currentUser = userMapper.findByUserId(userId).orElse(null);
+            if (currentUser != null && currentUser.getRole() == UserRole.AGENCY) {
+                agencyNo = currentUser.getAgencyNo();
+            }
+        }
+
+        List<ComplaintDTO> complaints = complaintMapper.findAll(search, category, status, region, sort, order,
+                agencyNo);
         int totalItems = complaints.size();
         int totalPages = (int) Math.ceil((double) totalItems / limit);
 
@@ -136,7 +149,18 @@ public class ComplaintController {
 
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
-        List<Map<String, Object>> stats = complaintMapper.getStats();
+        Long agencyNo = null;
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
+            String userId = auth.getName();
+            com.safeguard.dto.UserDTO currentUser = userMapper.findByUserId(userId).orElse(null);
+            if (currentUser != null && currentUser.getRole() == UserRole.AGENCY) {
+                agencyNo = currentUser.getAgencyNo();
+            }
+        }
+
+        List<Map<String, Object>> stats = complaintMapper.getStats(agencyNo);
         if (stats != null && !stats.isEmpty()) {
             return ResponseEntity.ok(stats.get(0));
         }
@@ -170,35 +194,90 @@ public class ComplaintController {
         if (!userMapper.existsByUserId("admin")) {
             UserDTO admin = UserDTO.builder()
                     .userId("admin")
-                    .pw("admin123")
+                    .pw(passwordEncoder.encode("admin123"))
                     .name("관리자")
                     .role(UserRole.AGENCY)
-                    .phone("010-0000-0000") // Required by mapper? No, but good to have
+                    .phone("010-0000-0000")
+                    .agencyNo(1L) // Assign to agency 1 (Seoul)
                     .build();
             userMapper.save(admin);
             return ResponseEntity.ok("Admin created: admin/admin123");
+        } else {
+            // Update password if exists to ensure it's encoded
+            userMapper.updatePassword("admin", passwordEncoder.encode("admin123"));
+            return ResponseEntity.ok("Admin password reset: admin/admin123");
         }
-        return ResponseEntity.ok("Admin already exists");
     }
 
-    @PostMapping("/setup-manager")
-    public ResponseEntity<String> setupManager() {
+    @PostMapping("/setup-manager-v2")
+    public ResponseEntity<String> setupManagerV2(@RequestBody Map<String, Object> params) {
         try {
-            if (!userMapper.existsByUserId("manager")) {
+            String userId = (String) params.get("userId");
+            String password = (String) params.get("password");
+            String name = (String) params.get("name");
+            Long agencyNo = Long.valueOf(params.get("agencyNo").toString());
+
+            if (!userMapper.existsByUserId(userId)) {
                 UserDTO manager = UserDTO.builder()
-                        .userId("manager")
-                        .pw(passwordEncoder.encode("manager123"))
-                        .name("담당자")
+                        .userId(userId)
+                        .pw(passwordEncoder.encode(password))
+                        .name(name)
                         .birthDate(java.time.LocalDate.of(1990, 1, 1))
                         .addr("서울시 강남구")
-                        .email("manager@example.com")
+                        .email(userId + "@example.com")
                         .role(UserRole.AGENCY)
                         .phone("010-9999-9999")
+                        .agencyNo(agencyNo)
                         .build();
                 userMapper.save(manager);
-                return ResponseEntity.ok("Manager created: manager/manager123");
+                log.info("Manager account created successfully: {}", userId);
+                return ResponseEntity.ok("Manager created: " + userId);
+            } else {
+                userMapper.updatePassword(userId, passwordEncoder.encode(password));
+                // Assuming we want to update the agency as well if it's a seed update
+                com.safeguard.dto.UserDTO existing = userMapper.findByUserId(userId).orElse(null);
+                if (existing != null) {
+                    // Update role and agency in case they changed
+                    // (Note: UserMapper needs an update method for this in a real app,
+                    // but for this helper we'll work with what's available or log)
+                    log.warn("Manager account already exists, updated password: {}", userId);
+                }
+                return ResponseEntity.ok("Manager password updated: " + userId);
             }
-            return ResponseEntity.ok("Manager already exists");
+        } catch (Exception e) {
+            log.error("Failed to create manager user", e);
+            return ResponseEntity.status(500).body("Failed to create manager: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/setup-manager-insa")
+    public ResponseEntity<String> setupManagerInsa() {
+        try {
+            String userId = "manager_insa";
+            String password = "password123";
+            String name = "인사혁신처 담당자";
+            Long agencyNo = 37L; // 인사혁신처 No
+
+            if (!userMapper.existsByUserId(userId)) {
+                UserDTO manager = UserDTO.builder()
+                        .userId(userId)
+                        .pw(passwordEncoder.encode(password))
+                        .name(name)
+                        .birthDate(java.time.LocalDate.of(1990, 1, 1))
+                        .addr("서울시 강남구")
+                        .email(userId + "@example.com")
+                        .role(UserRole.AGENCY)
+                        .phone("010-9999-9999")
+                        .agencyNo(agencyNo)
+                        .build();
+                userMapper.save(manager);
+                log.info("Manager account created successfully: {}", userId);
+                return ResponseEntity.ok("Manager created: manager_insa / password123 (AgencyNo: 37)");
+            } else {
+                userMapper.updatePassword(userId, passwordEncoder.encode(password));
+                log.warn("Manager account already exists, updated password: {}", userId);
+                return ResponseEntity.ok("Manager password updated: manager_insa / password123");
+            }
         } catch (Exception e) {
             log.error("Failed to create manager user", e);
             return ResponseEntity.status(500).body("Failed to create manager: " + e.getMessage());

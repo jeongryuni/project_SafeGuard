@@ -13,9 +13,19 @@ import MapView from './pages/MapView';
 import MyPage from './pages/MyPage';
 import FindAccount from './pages/FindAccount';
 import ResetPassword from './pages/ResetPassword';
+import Dashboard from './pages/Dashboard';
 import './index.css';
 
 function App() {
+  const role = localStorage.getItem('role') || 'USER'; // Default to USER
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
+    window.location.href = '/login';
+  };
+
   return (
     <Router>
       <div className="app">
@@ -23,11 +33,19 @@ function App() {
         <div className="top-bar">
           <div className="container" style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <div className="top-bar__links">
-              <Link to="/mypage">마이페이지</Link>
-              <span>|</span>
-              <Link to="/register">회원가입</Link>
-              <span>|</span>
-              <Link to="/login">로그인</Link>
+              {localStorage.getItem('token') ? (
+                <>
+                  <Link to="/mypage">마이페이지</Link>
+                  <span>|</span>
+                  <button onClick={logout} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, font: 'inherit' }}>로그아웃</button>
+                </>
+              ) : (
+                <>
+                  <Link to="/register">회원가입</Link>
+                  <span>|</span>
+                  <Link to="/login">로그인</Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -42,10 +60,20 @@ function App() {
             </div>
             <nav className="nav">
               <ul className="nav__list">
-                <li className="nav__item"><Link to="/apply-text">신고 하기</Link></li>
-                <li className="nav__item"><Link to="/about">서비스 소개</Link></li>
-                <li className="nav__item"><Link to="/list">민원 목록</Link></li>
-                <li className="nav__item"><Link to="/map">신고현황 지도</Link></li>
+                {role === 'AGENCY' ? (
+                  <>
+                    <li className="nav__item"><Link to="/admin/list">민원 목록(관리자)</Link></li>
+                    <li className="nav__item"><Link to="/admin/map">신고현황 지도(관리자)</Link></li>
+                    <li className="nav__item"><Link to="/admin/dashboard">대시보드(관리자)</Link></li>
+                  </>
+                ) : (
+                  <>
+                    <li className="nav__item"><Link to="/apply-text">신고 하기</Link></li>
+                    <li className="nav__item"><Link to="/about">서비스 소개</Link></li>
+                    <li className="nav__item"><Link to="/list">민원 목록</Link></li>
+                    <li className="nav__item"><Link to="/map">신고현황 지도</Link></li>
+                  </>
+                )}
               </ul>
             </nav>
           </div>
@@ -61,8 +89,11 @@ function App() {
           <Route path="/apply-image" element={<ApplyImage />} />
           <Route path="/about" element={<About />} />
           <Route path="/list" element={<List />} />
+          <Route path="/admin/list" element={<List />} />
           <Route path="/reports/:id" element={<Detail />} />
           <Route path="/map" element={<MapView />} />
+          <Route path="/admin/map" element={<MapView />} />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/find-account" element={<FindAccount />} />
           <Route path="/reset-password" element={<ResetPassword />} />
