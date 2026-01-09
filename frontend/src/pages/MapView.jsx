@@ -19,6 +19,9 @@ function MapView() {
   const [locations, setLocations] = useState([]);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
 
+  // [추가] map이 실제로 생성되었는지 (초기 렌더/StrictMode에서 renderMarkers가 먼저 호출되는 문제 방지)
+  const [mapReady, setMapReady] = useState(false);
+
   // ====== UI Helpers ======
   const getCategoryStyle = (category) => {
     const styles = {
@@ -70,6 +73,7 @@ function MapView() {
   const clearMarkers = () => {
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
+
     if (clustererRef.current) {
       clustererRef.current.clear();
     }
@@ -112,7 +116,10 @@ function MapView() {
     const map = mapRef.current;
     console.log("[renderMarkers] called", { locationsLen: locations?.length });
     console.log("[renderMarkers] mapRef", !!map, "kakao", !!window.kakao?.maps);
-    if (!map || !window.kakao?.maps) return;
+//     if (!map || !window.kakao?.maps) return;
+
+    // [수정] mapReady + kakao + map 다 준비된 후에만 진행
+    if (!mapReady || !map || !window.kakao?.maps) return;
 
     // 기존 마커 제거
     clearMarkers();
@@ -166,10 +173,15 @@ function MapView() {
     markersRef.current = markers;
   };
 
+  // [추가] locations가 바뀌면 마커를 다시 그림
+  // 단, mapReady가 false면 renderMarkers 내부에서 return 됨
+  useEffect(() => {
+    renderMarkers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapReady, locations]);
 
   // ====== Kakao SDK 로드 & 지도 생성 ======
   useEffect(() => {
-    renderMarkers();
     const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
     console.log("KAKAO KEY =", kakaoKey);
     if (!kakaoKey) {
@@ -186,6 +198,9 @@ function MapView() {
         };
         const map = new window.kakao.maps.Map(container, options);
         mapRef.current = map;
+
+      // [추가] map 생성 완료 플래그
+      setMapReady(true);
 
         // idle 이벤트: 이동/줌 끝날 때마다 bounds 재조회
         // (너희 GIS 요구사항에 맞는 정석 패턴)
@@ -231,6 +246,9 @@ function MapView() {
       mapRef.current = null;
       clustererRef.current = null;
       idleListenerRef.current = null;
+
+      // [추가] mapReady 리셋
+      setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
