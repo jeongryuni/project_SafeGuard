@@ -273,7 +273,7 @@ function ApplyVoice() {
             <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                     <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '10px' }}>
-                        음성 민원 신청
+                        🎙️ 음성 민원 신청
                     </h1>
                     <p style={{ color: '#64748b', fontSize: '1.1rem' }}>목소리로 쉽고 빠르게 민원을 신청하세요</p>
                 </div>
@@ -290,7 +290,7 @@ function ApplyVoice() {
                         top: '100px'
                     }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#374151', marginBottom: '24px' }}>
-                            작성 단계
+                            📋 작성 단계
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {steps.map((step) => (
@@ -350,7 +350,7 @@ function ApplyVoice() {
                                     marginBottom: '20px',
                                     fontSize: '0.9rem'
                                 }}>
-                                    {error}
+                                    ⚠️ {error}
                                 </div>
                             )}
 
@@ -406,7 +406,7 @@ function ApplyVoice() {
                                             transition: 'all 0.3s'
                                         }}
                                     >
-                                        <span style={{ fontSize: '2rem' }}>{isRecording ? '중지' : '녹음'}</span>
+                                        <span style={{ fontSize: '2rem' }}>{isRecording ? '⏹' : '🎤'}</span>
                                     </div>
                                     <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '12px' }}>
                                         {isRecording ? formatTime(recordingTime) : '녹음 시작'}
@@ -458,7 +458,7 @@ function ApplyVoice() {
                                             boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
                                         }}
                                     >
-                                        {isAnalyzing ? '분석 중...' : 'AI 분석 (RAG)'}
+                                        {isAnalyzing ? '분석 중...' : '🤖 AI 분석 (RAG)'}
                                     </button>
                                 </div>
                             </div>
@@ -478,7 +478,7 @@ function ApplyVoice() {
                                     alignItems: 'center',
                                     gap: '8px'
                                 }}>
-                                    <span style={{ fontSize: '1.1rem' }}>위치</span>
+                                    <span style={{ fontSize: '1.1rem' }}>📍</span>
                                     <span style={{ color: '#16a34a', fontWeight: '500' }}>{formData.location.address}</span>
                                 </div>
                                 <div
@@ -500,7 +500,7 @@ function ApplyVoice() {
                                     공개 여부
                                 </label>
                                 <div style={{ display: 'flex', gap: '16px' }}>
-                                    {[{ value: true, label: '공개', desc: '다른 시민들도 볼 수 있음' }, { value: false, label: '비공개', desc: '나와 담당자만 확인 가능' }].map(opt => (
+                                    {[{ value: true, label: '🌐 공개', desc: '다른 시민들도 볼 수 있음' }, { value: false, label: '🔒 비공개', desc: '나와 담당자만 확인 가능' }].map(opt => (
                                         <label key={String(opt.value)} style={{
                                             flex: 1,
                                             padding: '16px',
@@ -540,7 +540,7 @@ function ApplyVoice() {
                                     transition: 'all 0.3s'
                                 }}
                             >
-                                {loading ? '접수 중...' : '민원 접수하기'}
+                                {loading ? '접수 중...' : '🚀 민원 접수하기'}
                             </button>
                         </form>
                     </div>
@@ -561,24 +561,24 @@ function ApplyVoice() {
                             color: 'white',
                             textAlign: 'center'
                         }}>
-                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>AI</div>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🤖</div>
                             <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0 }}>AI 음성 분석</h3>
                         </div>
                         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div style={{ padding: '18px', backgroundColor: '#f5f3ff', borderRadius: '12px' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#7c3aed', fontWeight: '700', marginBottom: '8px' }}>민원 유형</div>
+                                <div style={{ fontSize: '0.85rem', color: '#7c3aed', fontWeight: '700', marginBottom: '8px' }}>📊 민원 유형</div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
                                     {ragResult ? ragResult.category : '분석 대기'}
                                 </div>
                             </div>
                             <div style={{ padding: '18px', backgroundColor: '#fdf4ff', borderRadius: '12px' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: '700', marginBottom: '8px' }}>처리 기관</div>
+                                <div style={{ fontSize: '0.85rem', color: '#a855f7', fontWeight: '700', marginBottom: '8px' }}>🏛️ 처리 기관</div>
                                 <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1e293b', textAlign: 'center' }}>
                                     {ragResult ? ragResult.agency_name : '-'}
                                 </div>
                             </div>
                             <div style={{ padding: '18px', backgroundColor: '#eff6ff', borderRadius: '12px' }}>
-                                <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', marginBottom: '8px' }}>판단 근거</div>
+                                <div style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: '700', marginBottom: '8px' }}>🔍 판단 근거</div>
                                 <div style={{ fontSize: '0.9rem', color: '#475569', lineHeight: '1.5', minHeight: '60px' }}>
                                     {ragResult ? ragResult.reasoning : '분석 결과가 여기에 표시됩니다.'}
                                 </div>
