@@ -25,6 +25,7 @@ function ApplyVoice() {
     // Recording state
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
+    const [previewText, setPreviewText] = useState(''); // 실시간 미리보기용 텍스트
     const mediaRecorderRef = useRef(null);
     const chunksRef = useRef([]);
     const recognitionRef = useRef(null);
@@ -57,7 +58,7 @@ function ApplyVoice() {
             }
 
             if (transcript) {
-                setFormData(prev => ({ ...prev, content: transcript }));
+                setPreviewText(transcript);
             }
         };
 
@@ -128,6 +129,7 @@ function ApplyVoice() {
             }
 
             setRecordingTime(0);
+            setPreviewText('');
             setIsRecording(true);
 
         } catch (err) {
@@ -473,8 +475,12 @@ function ApplyVoice() {
                                     <div style={{ fontSize: '1.2rem', fontWeight: '700', color: isRecording ? '#ef4444' : '#1e293b', marginBottom: '12px' }}>
                                         {isRecording ? formatTime(recordingTime) : (isTranscribing ? '음성 변환 중...' : '녹음 시작')}
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                        {isRecording ? '말씀을 하신 후 정지 버튼을 눌러주세요' : (isTranscribing ? '잠시만 기다려주세요...' : '버튼을 눌러 음성 인식을 하세요')}
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b', minHeight: '1.2em' }}>
+                                        {isRecording ? (
+                                            <span>{previewText || '듣고 있습니다...'}</span>
+                                        ) : (
+                                            isTranscribing ? '잠시만 기다려주세요...' : '버튼을 눌러 음성 인식을 하세요'
+                                        )}
                                     </div>
                                 </div>
                             </div>
