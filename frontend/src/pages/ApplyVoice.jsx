@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complaintsAPI, sttAPI, getToken, analyzeText } from '../utils/api';
+import { complaintsAPI, sttAPI, getToken, analyzeText, generateTitle } from '../utils/api';
 
 function ApplyVoice() {
     const navigate = useNavigate();
@@ -123,20 +123,38 @@ function ApplyVoice() {
                     const finalTranscript = previewTextRef.current;
                     const result = await sttAPI.transcribe(audioBlob, finalTranscript);
 
+                    let finalContent = finalTranscript;
+
                     // UnifiedComplaintManager response mapping
                     if (result?.original_text) {
-                        setFormData(prev => ({
-                            ...prev,
-                            // 서버에서 돌아온 original_text (우리가 보낸 텍스트가 그대로 옴)
-                            content: result.original_text || finalTranscript,
-                            title: result.title || prev.title
-                        }));
+                        finalContent = result.original_text || finalTranscript;
                     } else if (result?.stt_text) {
-                        setFormData(prev => ({ ...prev, content: result.stt_text }));
-                    } else {
-                        // Fallback
-                        setFormData(prev => ({ ...prev, content: finalTranscript }));
+                        finalContent = result.stt_text;
                     }
+
+                    setFormData(prev => ({
+                        ...prev,
+                        content: finalContent
+                    }));
+
+                    // 제목 자동 생성 호출 (음성민원)
+                    try {
+                        const titleRes = await generateTitle(
+                            finalContent,
+                            formData.location?.address || '',
+                            '음성민원' // 타입 지정
+                        );
+
+                        if (titleRes.title) {
+                            setFormData(prev => ({
+                                ...prev,
+                                title: titleRes.title
+                            }));
+                        }
+                    } catch (titleErr) {
+                        console.error("Voice title generation failed", titleErr);
+                    }
+
                 } catch (err) {
                     setError('음성 인식에 실패했습니다: ' + err.message);
                 } finally {
