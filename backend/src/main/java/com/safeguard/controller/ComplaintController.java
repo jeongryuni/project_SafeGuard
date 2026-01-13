@@ -78,6 +78,8 @@ public class ComplaintController {
          * ===============================
          */
         List<ComplaintDTO> complaints = complaintMapper.findAll(params);
+        long totalCount = complaintMapper.countAll(params);
+        int totalPages = (int) Math.ceil((double) totalCount / limit);
 
         /*
          * ===============================
@@ -90,7 +92,8 @@ public class ComplaintController {
         Map<String, Object> pagination = new HashMap<>();
         pagination.put("currentPage", page);
         pagination.put("limit", limit);
-        pagination.put("count", complaints.size());
+        pagination.put("totalCount", totalCount);
+        pagination.put("totalPages", totalPages);
 
         response.put("pagination", pagination);
 
@@ -172,10 +175,15 @@ public class ComplaintController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
 
-        ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
-        complaintMapper.updateStatus(id, status);
-
-        return ResponseEntity.ok(Map.of("message", "Status updated"));
+        try {
+            ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
+            complaintMapper.updateStatus(id, status.name());
+            return ResponseEntity.ok(Map.of("message", "Status updated"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + body.get("status")));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
+        }
     }
 
     /*
@@ -188,8 +196,12 @@ public class ComplaintController {
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
 
-        complaintMapper.updateAnswer(id, body.get("answer"));
-        return ResponseEntity.ok(Map.of("message", "Answer updated"));
+        try {
+            complaintMapper.updateAnswer(id, body.get("answer"));
+            return ResponseEntity.ok(Map.of("message", "Answer updated"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
+        }
     }
 
     /*
