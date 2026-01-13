@@ -79,7 +79,7 @@ public class ComplaintController {
          * 3. DB 조회 (페이징 포함)
          * ===============================
          */
-        List<ComplaintDTO> complaints = complaintMapper.findAll(params);
+        List<ComplaintDTO> complaints = complaintMapper.selectComplaintList(params);
 
         /*
          * ===============================
@@ -210,6 +210,22 @@ public class ComplaintController {
         return ResponseEntity.ok(Map.of(
                 "complaintNo", complaintNo,
                 "message", "민원이 성공적으로 접수되었습니다."));
+    }
+
+    /*
+     * ===============================
+     * 내 민원 목록 (Mypage)
+     * ===============================
+     */
+    @GetMapping("/mypage")
+    public ResponseEntity<List<ComplaintDTO>> getMyComplaints(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("userNo", userNo);
+        
+        List<ComplaintDTO> myComplaints = complaintMapper.selectComplaintList(params);
+        return ResponseEntity.ok(myComplaints);
     }
 
     // 이미지 업로드

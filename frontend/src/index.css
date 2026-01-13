@@ -236,7 +236,8 @@ ul {
 
 /* Admin Theme Overrides */
 .admin-theme {
-  --primary-color: #374151; /* Dark Slate Gray */
+  --primary-color: #374151;
+  /* Dark Slate Gray */
   --primary-light: #4b5563;
   --primary-dark: #1f2937;
 }

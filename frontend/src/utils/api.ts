@@ -134,6 +134,8 @@ export const complaintsAPI = {
     /** ✅ Dashboard에서 호출하는데 없어서 터지던 함수 */
     getStats: () => apiRequest('/complaints/stats'),
 
+    getMyComplaints: () => apiRequest('/complaints/mypage'),
+
     // GIS
     getMapItems: (params: any) => {
         const query = new URLSearchParams(params).toString();
@@ -177,6 +179,31 @@ export const complaintsAPI = {
         }
         return data; // { imagePath: '...' } 형태 기대
     },
+};
+
+/**
+ * 회원 정보 관리 관련 API
+ */
+export const usersAPI = {
+    // 내 프로필 정보 조회
+    getMe: () => apiRequest('/users/me'),
+
+    // 프로필 정보 수정
+    updateProfile: (data: any) => apiRequest('/users/me/profile', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    }),
+
+    // 비밀번호 수정
+    updatePassword: (data: any) => apiRequest('/users/me/password', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    }),
+
+    // 회원 탈퇴
+    deleteAccount: () => apiRequest('/users/me', {
+        method: 'DELETE',
+    }),
 };
 
 // Agencies API
@@ -266,6 +293,7 @@ export default {
     auth: authAPI,
     complaints: complaintsAPI,
     agencies: agenciesAPI,
+    users: usersAPI,
     analyzeImage,
     analyzeText,
     generateTitle,
