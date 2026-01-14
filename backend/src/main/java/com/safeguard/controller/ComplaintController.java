@@ -144,6 +144,7 @@ public class ComplaintController {
         result.put("authorName", "익명사용자");
         result.put("likeCount", c.getLikeCount() != null ? c.getLikeCount() : 0);
         result.put("answer", c.getAnswer());
+        result.put("assignedAgencyText", c.getAssignedAgencyText());
 
         Long userNo = userMapper.findByUserId("testuser")
                 .map(UserDTO::getUserNo)
