@@ -10,7 +10,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import javax.sql.DataSource;
 
 @Configuration
-@MapperScan("com.safeguard.mapper")
+// @MapperScan({ "com.safeguard.mapper", "com.safeguard.ljr.mapper" })
+@MapperScan({ "com.safeguard.mapper" })
 public class MyBatisConfig {
 
     @Bean
@@ -18,7 +19,8 @@ public class MyBatisConfig {
         SqlSessionFactoryBean sessionFactory = new SqlSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);
         sessionFactory
-                .setMapperLocations(new PathMatchingResourcePatternResolver().getResources("classpath:mapper/*.xml"));
+                .setMapperLocations(
+                        new PathMatchingResourcePatternResolver().getResources("classpath:mapper/**/*.xml"));
         sessionFactory.setTypeAliasesPackage("com.safeguard.dto");
 
         // This is important for mapping underscores to camelCase

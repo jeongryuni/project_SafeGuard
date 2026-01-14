@@ -6,18 +6,21 @@ import ReactApexChart from 'react-apexcharts';
 
 interface DistrictBottleneckChartProps {
     type: 'unprocessed' | 'overdue';
-    data: { name: string; count: number }[];
+    data: any[];
 }
 
-const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type, data }) => {
-    // 실제 데이터 매핑
-    const currentData = data.map(item => ({ x: item.name, y: item.count }));
-
-
+const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type, data = [] }) => {
+    // 백엔드 데이터 매핑 (name, count) -> (x, y)
+    const currentData = React.useMemo(() => {
+        if (data && data.length > 0) {
+            return data.map(d => ({ x: d.name, y: d.count }));
+        }
+        return [];
+    }, [data]);
     const mainColor = type === 'unprocessed' ? '#3B82F6' : '#EF4444';
     const bgColor = type === 'unprocessed' ? '#EFF6FF' : '#FEF2F2';
     const title = type === 'unprocessed' ? '구별 미처리 TOP 10' : '구별 지연(Overdue) TOP 10';
-    const maxY = Math.max(...currentData.map((d) => d.y));
+    const maxY = currentData.length > 0 ? Math.max(...currentData.map((d) => d.y)) : 10;
     const xMax = Math.ceil(maxY * 1.3); // 1.2~1.35 사이로 취향 조절
 
     const options = {
