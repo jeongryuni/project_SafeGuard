@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Download
 } from 'lucide-react';
-import { complaintsAPI } from '../ljr/utils/api';
-import ComplaintTrendChart from '../ljr/Charts/ComplaintTrendChart';
-import ComplaintCategoryChart from '../ljr/Charts/ComplaintCategoryChart';
-import AgeGroupChart from '../ljr/Charts/AgeGroupChart';
-import DistrictBottleneckChart from '../ljr/Charts/DistrictBottleneckChart';
+import { complaintsAPI } from '../utils/api';
+import ComplaintTrendChart from '../components/Charts/ComplaintTrendChart';
+import ComplaintCategoryChart from '../components/Charts/ComplaintCategoryChart';
+import AgeGroupChart from '../components/Charts/AgeGroupChart';
+import DistrictBottleneckChart from '../components/Charts/DistrictBottleneckChart';
 
 
 
@@ -15,10 +15,19 @@ import DistrictBottleneckChart from '../ljr/Charts/DistrictBottleneckChart';
 
 
 
-const Dashboard = () => {
+/**
+ * 메인 관리자 대시보드 컴포넌트
+ * (한글 기능 설명: 각종 민원 통계 요약, 월별 트렌드, 자치구별 지연 현황 등 시각화)
+ */
+const Dashboard: React.FC = () => {
+    // 통계 데이터 관리 상태
     const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    const [selectedCategory, setSelectedCategory] = useState('전체');
+    // 필터링 상태 (카테고리)
+    const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+
+    // 지연 민원 리스트 페이지네이션 상태
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 
@@ -26,15 +35,20 @@ const Dashboard = () => {
         ? stats.overdueList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
         : [];
 
+    // 통계 조회 및 수동 새로고침 처리
+    const fetchStats = async () => {
+        try {
+            setLoading(true);
+            const data = await complaintsAPI.getStats(selectedCategory === '전체' ? undefined : selectedCategory);
+            setStats(data);
+        } catch (error) {
+            console.error('통계 조회 오류:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const data = await complaintsAPI.getStats(selectedCategory);
-                setStats(data);
-            } catch (error) {
-                console.error('Failed to fetch stats, using fallback:', error);
-            }
-        };
 
         fetchStats();
 
