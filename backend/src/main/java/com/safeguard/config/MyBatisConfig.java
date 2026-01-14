@@ -9,6 +9,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
 
+/**
+ * MyBatis 설정 클래스입니다.
+ * (한글 기능 설명: Mapper 인터페이스 스캔 경로 설정)
+ */
 @Configuration
 // @MapperScan({ "com.safeguard.mapper", "com.safeguard.ljr.mapper" })
 @MapperScan({ "com.safeguard.mapper" })

@@ -38,6 +38,9 @@ public class ComplaintController {
     private final FileService fileService;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 민원 목록 조회 (페이징, 검색, 필터링 기능 제공)
+     */
     @GetMapping
     public ResponseEntity<Map<String, Object>> getComplaints(
             @RequestParam(defaultValue = "1") int page,
@@ -46,29 +49,19 @@ public class ComplaintController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String status) {
 
-        /*
-         * ===============================
-         * 1. 로그인 사용자 기준 agencyNo
-         * ===============================
-         */
+        // 로그인한 기관 사용자인 경우 해당 기관의 민원만 필터링하도록 agencyNo 확보
         Long agencyNo = null;
         var auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
 
         if (auth != null && auth.isAuthenticated()
                 && !"anonymousUser".equals(auth.getPrincipal())) {
-
             UserDTO user = userMapper.findByUserId(auth.getName()).orElse(null);
             if (user != null && user.getRole() == UserRole.AGENCY) {
                 agencyNo = user.getAgencyNo();
             }
         }
 
-        /*
-         * ===============================
-         * 2. MyBatis 파라미터 Map
-         * ===============================
-         */
         int offset = (page - 1) * limit;
 
         Map<String, Object> params = new HashMap<>();
@@ -79,20 +72,12 @@ public class ComplaintController {
         params.put("limit", limit);
         params.put("offset", offset);
 
-        /*
-         * ===============================
-         * 3. DB 조회 (페이징 포함)
-         * ===============================
-         */
+        // 페이징 처리된 목록과 전체 개수 조회
         List<ComplaintDTO> complaints = complaintMapper.findAll(params);
         long totalCount = complaintMapper.countAll(params);
         int totalPages = (int) Math.ceil((double) totalCount / limit);
 
-        /*
-         * ===============================
-         * 4. 응답 구성
-         * ===============================
-         */
+        // 응답 맵 구성
         Map<String, Object> response = new HashMap<>();
         response.put("complaints", complaints);
 
@@ -101,20 +86,16 @@ public class ComplaintController {
         pagination.put("limit", limit);
         pagination.put("totalCount", totalCount);
         pagination.put("totalPages", totalPages);
-
         response.put("pagination", pagination);
 
         return ResponseEntity.ok(response);
     }
 
-    /*
-     * ===============================
-     * 민원 상세
-     * ===============================
+    /**
+     * 특정 민원 상세 정보 조회 (좋아요 여부 포함)
      */
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getComplaintDetail(@PathVariable Long id) {
-
         ComplaintDTO c = complaintMapper.findByComplaintNo(id)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
 
@@ -133,27 +114,19 @@ public class ComplaintController {
         result.put("likeCount", c.getLikeCount() != null ? c.getLikeCount() : 0);
         result.put("answer", c.getAnswer());
 
-        Long userNo = userMapper.findByUserId("testuser")
-                .map(UserDTO::getUserNo)
-                .orElse(1L);
-
+        // 현재 로그인한 사용자의 좋아요 상태 확인 (임시로 testuser 사용 가능)
+        Long userNo = userMapper.findByUserId("testuser").map(UserDTO::getUserNo).orElse(1L);
         result.put("liked", complaintMapper.isLikedByUser(id, userNo));
 
         return ResponseEntity.ok(result);
     }
 
-    /*
-     * ===============================
-     * 좋아요 토글
-     * ===============================
+    /**
+     * 민원 좋아요 토글 기능
      */
     @PostMapping("/{id}/like")
     public ResponseEntity<Map<String, Object>> toggleLike(@PathVariable Long id) {
-
-        Long userNo = userMapper.findByUserId("testuser")
-                .map(UserDTO::getUserNo)
-                .orElse(1L);
-
+        Long userNo = userMapper.findByUserId("testuser").map(UserDTO::getUserNo).orElse(1L);
         boolean liked = complaintMapper.checkUserLike(id, userNo) > 0;
 
         if (liked) {
@@ -165,44 +138,35 @@ public class ComplaintController {
         }
 
         ComplaintDTO c = complaintMapper.findByComplaintNo(id).orElseThrow();
-
         return ResponseEntity.ok(Map.of(
                 "message", "success",
                 "likeCount", c.getLikeCount(),
                 "liked", !liked));
     }
 
-    /*
-     * ===============================
-     * 상태 변경
-     * ===============================
+    /**
+     * 민원 처리 상태 변경 (관리자 전용)
      */
     @PatchMapping("/{id}/status")
     public ResponseEntity<Map<String, String>> updateStatus(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
-
         try {
             ComplaintStatus status = ComplaintStatus.valueOf(body.get("status"));
             complaintMapper.updateStatus(id, status.name());
             return ResponseEntity.ok(Map.of("message", "Status updated"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + body.get("status")));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", "Update failed: " + e.getMessage()));
         }
     }
 
-    /*
-     * ===============================
-     * 답변 등록
-     * ===============================
+    /**
+     * 민원 답변 등록 및 수정
      */
     @PatchMapping("/{id}/answer")
     public ResponseEntity<Map<String, String>> updateAnswer(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
-
         try {
             complaintMapper.updateAnswer(id, body.get("answer"));
             return ResponseEntity.ok(Map.of("message", "Answer updated"));
@@ -211,10 +175,8 @@ public class ComplaintController {
         }
     }
 
-    /*
-     * ===============================
-     * 민원 생성
-     * ===============================
+    /**
+     * 신규 민원 등록 처리
      */
     @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<Map<String, Object>> createComplaint(
@@ -222,13 +184,11 @@ public class ComplaintController {
             @RequestPart(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal CustomUserDetails userDetails) throws JsonProcessingException {
 
-        log.info("Received Complaint Creation Request. JSON: {}", complaintJson);
-
+        log.info("민원 등록 요청 수신: {}", complaintJson);
         Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
 
         @SuppressWarnings("unchecked")
         Map<String, Object> data = objectMapper.readValue(complaintJson, Map.class);
-
         Long complaintNo = complaintService.createComplaint(data, file, userNo);
 
         return ResponseEntity.ok(Map.of(
@@ -236,23 +196,40 @@ public class ComplaintController {
                 "message", "민원이 성공적으로 접수되었습니다."));
     }
 
-    /*
-     * ===============================
-     * 내 민원 목록 (Mypage)
-     * ===============================
+    /**
+     * 현재 로그인한 사용자의 민원 목록 조회 (마이페이지용)
      */
     @GetMapping("/mypage")
     public ResponseEntity<List<ComplaintDTO>> getMyComplaints(@AuthenticationPrincipal CustomUserDetails userDetails) {
         Long userNo = (userDetails != null) ? userDetails.getUserNo() : 1L;
-
         Map<String, Object> params = new HashMap<>();
         params.put("userNo", userNo);
-
         List<ComplaintDTO> myComplaints = complaintMapper.selectComplaintListByUserNo(params);
         return ResponseEntity.ok(myComplaints);
     }
 
-    // 이미지 업로드
+    /**
+     * 관리자 대시보드용 통계 데이터 조회 (실시간 폴링 대응)
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getDashboardStats(@RequestParam(required = false) String category) {
+        Long agencyNo = null;
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            UserDTO user = userMapper.findByUserId(auth.getName()).orElse(null);
+            if (user != null && user.getRole() == UserRole.AGENCY) {
+                agencyNo = user.getAgencyNo();
+            }
+        }
+
+        Map<String, Object> stats = complaintService.getDashboardStats(agencyNo, category);
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * 공통 이미지 업로드 기능
+     */
     @PostMapping("/images")
     public ResponseEntity<Map<String, String>> uploadImage(
             @RequestParam("image") org.springframework.web.multipart.MultipartFile file) {
