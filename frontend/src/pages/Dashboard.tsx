@@ -5,6 +5,7 @@ import {
 import { complaintsAPI } from '../utils/api';
 import ComplaintTrendChart from '../components/Charts/ComplaintTrendChart';
 import ComplaintCategoryChart from '../components/Charts/ComplaintCategoryChart';
+import AgeGroupChart from '../components/Charts/AgeGroupChart';
 
 
 
@@ -73,9 +74,9 @@ const Dashboard = () => {
             .dash-kpi-title { color:#6b7280; font-weight: 800; margin-bottom: 8px; }
             .dash-kpi-value { font-size: 32px; font-weight: 900; }
 
-            .dash-main { display:grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; margin-bottom: 32px; }
+            .dash-main { display:grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; margin-bottom: 32px; align-items: stretch; }
             .dash-left { grid-column: span 5 / span 5; display:flex; flex-direction:column; gap: 24px; }
-            .dash-right { grid-column: span 7 / span 7; }
+            .dash-right { grid-column: span 7 / span 7; display:flex; flex-direction:column; gap: 24px; }
 
             .dash-card { background:#fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
             .dash-card-pad-4 { padding: 16px; }
@@ -151,9 +152,12 @@ const Dashboard = () => {
                             <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} />
                         </div>
 
-                        {/* Right: Trend Chart -> Replaced with ChartOne */}
+                        {/* Right: Trend Chart + Age Group Chart */}
                         <div className="dash-right">
                             <ComplaintTrendChart selectedCategory={selectedCategory} />
+                            <div style={{ flex: 1 }}>
+                                <AgeGroupChart />
+                            </div>
                         </div>
                     </div>
                 </div>
