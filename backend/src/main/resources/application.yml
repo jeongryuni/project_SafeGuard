@@ -1,6 +1,7 @@
 spring:
   application:
     name: backend
+
   datasource:
     url: jdbc:postgresql://localhost:5433/safeguard
     username: user
@@ -14,6 +15,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
   cloud:
     aws:
       s3:
@@ -22,7 +24,6 @@ spring:
       credentials:
         access-key: ${AWS_ACCESS_KEY_ID}
         secret-key: ${AWS_SECRET_ACCESS_KEY}
-
 
 # MyBatis Configuration
 mybatis:
@@ -39,8 +40,6 @@ ai:
     url: ${AI_RAG_URL:http://127.0.0.1:8001}
   stt:
     url: ${AI_STT_URL:http://127.0.0.1:8000}
-
-
 
 # JWT Configuration
 jwt:
@@ -69,5 +68,3 @@ management:
   metrics:
     tags:
       application: backend-spring
-
-
