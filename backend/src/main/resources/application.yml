@@ -22,8 +22,8 @@ spring:
         bucket: ${AWS_S3_BUCKET:safeguard-bukket}
         region: ${AWS_REGION:ap-northeast-2}
       credentials:
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
+        access-key: ${AWS_ACCESS_KEY_ID:none}
+        secret-key: ${AWS_SECRET_ACCESS_KEY:none}
 
 # MyBatis Configuration
 mybatis:
