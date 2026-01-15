@@ -18,7 +18,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type,
     const [data, setData] = useState<{ x: string, y: number }[]>([]);
 
     useEffect(() => {
-        // Fetch Dashboard Stats including bottleneck data
+        // 대시보드 통계 API 호출 (병목 데이터 포함)
         fetch(`/api/complaints/stats/dashboard`)
             .then(res => res.json())
             .then(data => {
@@ -29,7 +29,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type,
                     sourceData = data.bottleneckOverdue || [];
                 }
 
-                // Formatting to match chart data structure {x, y}
+                // 차트 데이터 구조 {x, y}에 맞춰 포맷팅
                 const formatted = sourceData.map((d: any) => ({
                     x: d.name,
                     y: parseInt(d.count)
@@ -46,7 +46,7 @@ const DistrictBottleneckChart: React.FC<DistrictBottleneckChartProps> = ({ type,
     const bgColor = type === 'unprocessed' ? '#EFF6FF' : '#FEF2F2';
     const title = type === 'unprocessed' ? '구별 미처리 TOP 10' : '구별 지연(Overdue) TOP 10';
     const maxY = Math.max(...currentData.map((d) => d.y));
-    const xMax = Math.ceil(maxY * 1.3); // 1.2~1.35 사이로 취향 조절
+    const xMax = Math.ceil(maxY * 1.3); // 여백 확보를 위한 배수 조정 (1.3배)
 
     const options = {
         chart: {

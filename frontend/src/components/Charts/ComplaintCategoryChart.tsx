@@ -36,13 +36,13 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                     const transformed = data.categoryStats.map((d: any, i: number) => ({
                         name: d.name,
                         value: d.value,
-                        change: Number((Math.random() * 20 - 10).toFixed(1)), // Mock change preserved
+                        change: Number((Math.random() * 20 - 10).toFixed(1)), // 더미 증감율 유지 (데모용)
                         rank: i + 1
                     }));
 
-                    // Sort by value desc if not already
+                    // 값 내림차순 정렬 (이미 되어있을 수 있으나 안전장치)
                     transformed.sort((a: any, b: any) => b.value - a.value);
-                    // Re-assign rank after sort
+                    // 정렬 후 순위 재할당
                     transformed.forEach((d: any, i: number) => d.rank = i + 1);
 
                     setCategoryData(transformed);
@@ -52,13 +52,13 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
             .catch(err => console.error("Failed to fetch category stats:", err));
     }, [selectedCategory, refreshKey]);
 
-    // Derived state for chart
+    // 차트용 파생 데이터 (상위 5개)
     const top5 = categoryData.slice(0, 5);
     const chartSeries = top5.map(d => d.value);
     const chartLabels = top5.map(d => d.name);
 
     const [state, setState] = useState({
-        series: [], // initialized in useEffect or derived
+        series: [], // useEffect에서 데이터 로드 후 설정됨
         options: {
             chart: {
                 type: 'donut' as const,
@@ -92,7 +92,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                     }
                 },
             },
-            // ... remaining options
+            // ... 기타 차트 옵션
 
             dataLabels: {
                 enabled: true,
@@ -207,7 +207,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                                 }}
                                 className="hover:bg-slate-50/80 group"
                             >
-                                {/* Rank Badge */}
+                                {/* 순위 뱃지 (Rank Badge) */}
                                 <div style={{
                                     width: '36px',
                                     height: '36px',
@@ -226,7 +226,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                                     {item.rank}
                                 </div>
 
-                                {/* Category Name */}
+                                {/* 카테고리명 (Category Name) */}
                                 <div style={{ flex: 1, fontSize: '16.5px', fontWeight: '850', color: '#1E293B', whiteSpace: 'nowrap' }}>
                                     <span className="group-hover:text-blue-600 transition-colors">{item.name}</span>
                                     {selectedCategory === item.name && (
@@ -234,7 +234,7 @@ const ComplaintCategoryChart: React.FC<ChartTwoProps> = ({ selectedCategory, onS
                                     )}
                                 </div>
 
-                                {/* Value & Change */}
+                                {/* 접수 건수 및 증감율 (Value & Change) */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: '100px', justifyContent: 'flex-end' }}>
                                         <span style={{ fontSize: '17px', fontWeight: '900', color: '#334155' }}>{item.value.toLocaleString()}</span>

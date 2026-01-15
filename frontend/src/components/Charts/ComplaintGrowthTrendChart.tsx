@@ -120,13 +120,13 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
             },
             dataLabels: {
                 enabled: true,
-                enabledOnSeries: [0], // Show labels only on Bar series (index 0)
+                enabledOnSeries: [0], // 막대(Bar) 시리즈(index 0)에만 데이터 라벨 표시
                 offsetY: -20,
                 style: { fontSize: '12px', colors: ['#304758'] },
                 formatter: (val: number) => val > 0 ? val.toLocaleString() : ''
             },
             xaxis: {
-                categories: dates, // Proper way to set X-axis labels
+                categories: dates, // X축 카테고리 설정
                 axisBorder: { show: false },
                 axisTicks: { show: false },
                 labels: { style: { colors: '#64748B', fontWeight: 600 } },
@@ -144,7 +144,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
                 {
                     seriesName: '증감율',
                     opposite: true,
-                    show: false, // Hide the axis
+                    show: false, // Y축 숨김 (깔끔한 UI를 위해)
                     title: { text: '증감율 (%)', style: { color: '#EF4444', fontWeight: 700 } },
                     labels: {
                         style: { colors: '#EF4444', fontWeight: 600 },
@@ -212,7 +212,7 @@ const ComplaintGrowthTrendChart: React.FC<ChartProps> = ({ selectedCategory, tim
     );
 };
 
-// Helper component for Summary Item
+// 하위 컴포넌트: 요약 아이템 (Summary Item)
 const SummaryItem = ({ label, count, prevCount }: { label: string; count: number; prevCount: number }) => {
     const diff = count - prevCount;
     let growthRate = 0;

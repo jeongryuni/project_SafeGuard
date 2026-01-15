@@ -285,7 +285,7 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                 {periodLabel} {arrow} {backlogStats.changePercent}%
             </span>
         );
-    }, [backlogStats, timeBasis]); // Added timeBasis to dependencies
+    }, [backlogStats, timeBasis]); // timeBasis 변경 시 재계산
 
     return (
         <div
@@ -311,14 +311,14 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                 </div>
             </div>
 
-            {/* KPI Row - Using flex to ensure perfect stretch-alignment with the chart box below */}
+            {/* KPI 행: flex 레이아웃으로 하단 차트와 너비 동기화 */}
             <div style={{ display: 'flex', gap: 24, width: '100%', boxSizing: 'border-box' }}>
                 {/* 1. 현재 미처리 건수 */}
                 <KpiCard
                     title="현재 미처리 건수"
                     value={`${backlogStats.current} 건`}
                     sub={backlogSubText}
-                    color='#3B82F6' // Static Blue to avoid confusion
+                    color='#3B82F6' // 혼동 방지를 위해 정적 파란색(Blue) 사용
                     criteria={`현재 처리되지 않은 민원 총 건수입니다.\n해당 유형의 행정 업무 부담 규모를 나타냅니다.`}
                 />
 
@@ -380,7 +380,7 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
                 />
             </div>
 
-            {/* Charts (Single panel) */}
+            {/* 차트 영역 (단일 패널) */}
             <div style={{ border: '1px solid #E2E8F0', borderRadius: 14, padding: 20, width: '100%', boxSizing: 'border-box' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
                     <div style={{ fontSize: 16, fontWeight: 900, color: '#0F172A' }}>

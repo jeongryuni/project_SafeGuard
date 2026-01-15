@@ -13,13 +13,6 @@ import DistrictBottleneckChart from '../components/Charts/DistrictBottleneckChar
 import ComplaintGrowthTrendChart from '../components/Charts/ComplaintGrowthTrendChart';
 
 
-
-
-// --- 임시 데이터 (Mock) ---
-// MOCK_OVERDUE_DATA removed
-
-
-
 /**
  * 관리자 대시보드 메인 페이지
  * 
@@ -47,7 +40,7 @@ const Dashboard = () => {
 
     const ITEMS_PER_PAGE = 5;
 
-    // Auto-refresh Timer
+    // 자동 갱신 타이머 (Auto-refresh)
     // 30초 자동 갱신을 위한 타이머 및 키 상태 관리
     const [refreshKey, setRefreshKey] = useState(0);
     const [timeLeft, setTimeLeft] = useState(30);
@@ -87,7 +80,7 @@ const Dashboard = () => {
         } catch (error) {
             console.error('Failed to fetch dashboard stats:', error);
         }
-    }, [selectedCategory, timeBasis, refreshKey]); // Refresh when refreshKey changes
+    }, [selectedCategory, timeBasis, refreshKey]); // refreshKey 변경 시 데이터 재조회
 
     useEffect(() => {
         fetchDashboardData();
@@ -157,7 +150,7 @@ const Dashboard = () => {
             .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
           `}</style>
             <div className="dash-container">
-                {/* 상단 타이틀 및 필터 */}
+                {/* 상단 타이틀 및 필터 */}+
                 <div className="dash-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <h1 className="dash-title">관리자 대시보드</h1>
@@ -312,16 +305,16 @@ const Dashboard = () => {
                     </div>
                 </section>
 
-                {/* 2. Main Content Grid (Boxed Layout) */}
+                {/* 2. 메인 콘텐츠 그리드 (박스 레이아웃) */}
                 <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-200 shadow-inner mb-8">
                     <div className="dash-main !mb-0">
-                        {/* Left: Donut Chart -> Replaced with ChartTwo */}
+                        {/* 좌측: 분류별 통계 차트 (Category Chart) */}
                         <div className="dash-left">
                             {/* 분류별 통계: refreshKey 전달하여 동기화 */}
                             <ComplaintCategoryChart selectedCategory={selectedCategory} onSelect={setSelectedCategory} refreshKey={refreshKey} />
                         </div>
 
-                        {/* Right: Trend Chart + Growth Trend Chart (Swapped AgeGroupChart) */}
+                        {/* 우측: 트렌드 차트 + 성장 추이 차트 (Trend + Growth) */}
                         <div className="dash-right">
                             <ComplaintTrendChart selectedCategory={selectedCategory} timeBasis={timeBasis} refreshKey={refreshKey} />
                             <div style={{ flex: 1 }}>
@@ -331,17 +324,17 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* 3. Age Group Chart (Moved here) */}
+                {/* 3. 연령별 현황 차트 (위치 변경됨) */}
                 <div style={{ marginBottom: '32px' }}>
                     <AgeGroupChart refreshKey={refreshKey} />
                 </div>
 
-                {/* 4. Bottom Grid: District Bottleneck Ranking (Bottleneck Analysis) */}
+                {/* 4. 하단 그리드: 자치구 병목 현황 분석 (Bottleneck Analysis) */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
                     <DistrictBottleneckChart type="unprocessed" refreshKey={refreshKey} />
                     <DistrictBottleneckChart type="overdue" refreshKey={refreshKey} />
                 </div>
-                {/* 5. Delayed Complaint List Section (Drill-down) */}
+                {/* 5. 지연 민원 상세 목록 (Drill-down) */}
                 <section ref={overdueListRef} style={{ marginBottom: '60px' }}>
                     <div className="dash-card shadow-2xl" style={{ border: '2px solid #FB7185', borderRadius: '16px', overflow: 'hidden', backgroundColor: 'white' }}>
                         <div style={{ backgroundColor: '#FFF1F2', padding: '24px 32px', borderBottom: '1px solid #FECDD3', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -386,7 +379,7 @@ const Dashboard = () => {
                                 </tbody>
                             </table>
 
-                            {/* Pagination Controls */}
+                            {/* 페이지네이션 컨트롤 */}
                             {totalPages > 1 && (
                                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '20px' }}>
                                     <button
