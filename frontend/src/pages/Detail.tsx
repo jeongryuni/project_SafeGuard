@@ -1,6 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { complaintsAPI, authAPI } from '../utils/api';
+import StatusBadge from '../components/StatusBadge';
+import { STATUS_STYLES } from '../utils/statusStyles';
+
+const ImageDisplay = ({ src }: { src?: string | null }) => {
+    const [imgError, setImgError] = useState(false);
+
+    if (!src || imgError) {
+        return (
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', backgroundColor: '#f8fafc' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px', opacity: 0.5 }}>📸</div>
+                <span style={{ fontSize: '1rem', fontWeight: '500', color: '#64748b' }}>
+                    {src ? '이미지를 불러올 수 없습니다' : '등록된 이미지가 없습니다'}
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={src}
+            alt="현장 사진"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={() => setImgError(true)}
+        />
+    );
+};
 
 function Detail() {
     const { id } = useParams();
@@ -105,6 +131,17 @@ function Detail() {
         return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>게시물을 찾을 수 없습니다.</div>;
     }
 
+    const location = useLocation();
+
+    const handleBack = () => {
+        const prevParams = location.state?.searchParams;
+        if (prevParams) {
+            navigate(`/list?${prevParams}`);
+        } else {
+            navigate('/list');
+        }
+    };
+
     // [Strict Access Control] 비공개 게시물 처리
     if (report.message === "비공개된 게시물입니다") {
         return (
@@ -115,7 +152,7 @@ function Detail() {
                     작성자와 담당 기관 관계자만 열람할 수 있습니다.
                 </p>
                 <button
-                    onClick={() => navigate('/list')}
+                    onClick={handleBack}
                     style={{
                         marginTop: '30px',
                         padding: '10px 20px',
@@ -132,13 +169,7 @@ function Detail() {
         );
     }
 
-    const statusMap = {
-        'UNPROCESSED': '미처리',
-        'IN_PROGRESS': '처리중',
-        'COMPLETED': '처리완료',
-        'REJECTED': '반려',
-        'CANCELLED': '취소'
-    };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -159,21 +190,7 @@ function Detail() {
     const currentIndex = Math.max(statusOrder.indexOf(report.status), 0);
     const progressPercent = (currentIndex / (statusOrder.length - 1)) * 100;
 
-    const getStepStyle = (index) => {
-        const isActive = index <= currentIndex;
-        return {
-            width: '56px',
-            height: '56px',
-            borderRadius: '16px',
-            background: isActive ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' : '#e2e8f0',
-            color: isActive ? 'white' : '#94a3b8',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.4rem',
-            boxShadow: isActive ? '0 10px 24px rgba(99, 102, 241, 0.3)' : 'none'
-        };
-    };
+
 
     const maskName = (name: string) => {
         if (!name) return '';
@@ -193,7 +210,7 @@ function Detail() {
                 <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#64748b' }}>
                     <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>홈</span>
                     <span>&gt;</span>
-                    <span style={{ cursor: 'pointer' }} onClick={() => navigate('/list')}>민원 목록</span>
+                    <span style={{ cursor: 'pointer' }} onClick={handleBack}>민원 목록</span>
                     <span>&gt;</span>
                     <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>상세 보기</span>
                 </div>
@@ -207,16 +224,7 @@ function Detail() {
                         {/* LEFT: Info Block */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                <span style={{
-                                    padding: '4px 10px',
-                                    borderRadius: '6px',
-                                    backgroundColor: report.status === 'COMPLETED' ? '#dcfce7' : '#e0e7ff',
-                                    color: report.status === 'COMPLETED' ? '#166534' : '#4338ca',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '700'
-                                }}>
-                                    {statusMap[report.status] || report.status}
-                                </span>
+                                <StatusBadge status={report.status} style={{ fontSize: '0.85rem' }} />
                                 <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No. {report.complaintNo}</span>
                             </div>
 
@@ -329,7 +337,7 @@ function Detail() {
                                             try {
                                                 await complaintsAPI.delete(id);
                                                 alert('삭제되었습니다.');
-                                                navigate('/list');
+                                                handleBack();
                                             } catch (err: any) {
                                                 alert(err.message || '삭제 실패');
                                             }
@@ -386,6 +394,7 @@ function Detail() {
 
 
 
+                                        const stepStyle = STATUS_STYLES[step.key];
                                         return (
                                             <div
                                                 key={step.key}
@@ -395,15 +404,15 @@ function Detail() {
                                                     width: '56px',
                                                     height: '56px',
                                                     borderRadius: '50%',
-                                                    backgroundColor: isActive ? 'white' : '#f8fafc',
-                                                    border: isCurrent ? '3px solid #6366f1' : (isActive ? '2px solid #6366f1' : '2px solid #e2e8f0'),
-                                                    color: isActive ? '#6366f1' : '#94a3b8',
+                                                    backgroundColor: isActive ? stepStyle.bg : '#f8fafc',
+                                                    border: isCurrent ? `3px solid ${stepStyle.color}` : (isActive ? `2px solid ${stepStyle.color}` : '2px solid #e2e8f0'),
+                                                    color: isActive ? stepStyle.color : '#94a3b8',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     fontSize: '1.5rem',
                                                     margin: '0 auto 12px',
-                                                    boxShadow: isCurrent ? '0 0 0 4px rgba(99, 102, 241, 0.2), 0 4px 6px rgba(0,0,0,0.1)' : 'none',
+                                                    boxShadow: isCurrent ? `0 0 0 4px ${stepStyle.bg}, 0 4px 6px rgba(0,0,0,0.1)` : 'none',
                                                     transform: isCurrent ? 'scale(1.1)' : 'scale(1)',
                                                     opacity: isActive ? 1 : 0.6,
                                                     transition: 'all 0.3s ease'
@@ -449,15 +458,8 @@ function Detail() {
 
                         {/* Complaint Content Grid */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '40px', marginBottom: '60px' }}>
-                            <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#f8fafc', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-                                {report.imagePath ? (
-                                    <img src={report.imagePath} alt="현장 사진" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                                        <span style={{ fontSize: '2rem', marginBottom: '10px' }}>📷</span>
-                                        <span>등록된 이미지가 없습니다</span>
-                                    </div>
-                                )}
+                            <div style={{ width: '100%', aspectRatio: '4/3', backgroundColor: '#f8fafc', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <ImageDisplay src={report.imagePath} />
                             </div>
 
                             <div>
@@ -573,7 +575,7 @@ function Detail() {
                         {/* List Button */}
                         <div style={{ marginTop: '60px', textAlign: 'center' }}>
                             <button
-                                onClick={() => navigate('/list')}
+                                onClick={handleBack}
                                 style={{
                                     padding: '14px 48px',
                                     backgroundColor: 'white',
