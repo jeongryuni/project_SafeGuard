@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { complaintsAPI, authAPI } from '../utils/api';
 import StatusBadge from '../components/StatusBadge';
+import Modal from '../components/common/Modal'; // Modal Import
 import { STATUS_STYLES } from '../utils/statusStyles';
 
 const ImageDisplay = ({ src }: { src?: string | null }) => {
@@ -37,7 +38,36 @@ function Detail() {
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
-    const [accessDenied, setAccessDenied] = useState(false); // New state for explicit private handling if needed
+    const [accessDenied, setAccessDenied] = useState(false);
+
+    // 모달 상태
+    const [modalConfig, setModalConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        callback?: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        callback: undefined
+    });
+
+    const showAlert = (title: string, message: string, callback?: () => void) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            callback
+        });
+    };
+
+    const closeModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+        if (modalConfig.callback) {
+            modalConfig.callback();
+        }
+    };
 
     const fetchDetail = async () => {
         try {
@@ -75,9 +105,9 @@ function Detail() {
         try {
             await complaintsAPI.updateStatus(id, newStatus);
             setReport(prev => ({ ...prev, status: newStatus }));
-            alert('상태가 변경되었습니다.');
+            showAlert('알림', '상태가 변경되었습니다.');
         } catch (err) {
-            alert(err.message);
+            showAlert('오류', err.message);
         }
     };
 
@@ -87,17 +117,16 @@ function Detail() {
             await complaintsAPI.updateAnswer(id, answerText);
             setReport(prev => ({ ...prev, answer: answerText }));
             setIsEditing(false); // Exit edit mode
-            alert('답변이 등록되었습니다.');
+            showAlert('알림', '답변이 등록되었습니다.');
         } catch (err) {
-            alert(err.message);
+            showAlert('오류', err.message);
         }
     };
 
     const handleReaction = async (type) => {
         const token = localStorage.getItem('token');
         if (!token) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login');
+            showAlert('알림', '로그인이 필요한 서비스입니다.', () => navigate('/login'));
             return;
         }
 
@@ -115,10 +144,10 @@ function Detail() {
             }));
         } catch (err) {
             if (err.message && err.message.includes('본인 글')) {
-                alert('본인 글에는 반응할 수 없습니다.');
+                showAlert('알림', '본인 글에는 반응할 수 없습니다.');
             } else {
                 console.error('Failed to update reaction:', err);
-                alert('처리 실패');
+                showAlert('오류', '처리 실패');
             }
         }
     };
@@ -336,10 +365,9 @@ function Detail() {
                                         if (window.confirm('정말 삭제하시겠습니까? (복구 불가)')) {
                                             try {
                                                 await complaintsAPI.delete(id);
-                                                alert('삭제되었습니다.');
-                                                handleBack();
+                                                showAlert('알림', '삭제되었습니다.', handleBack);
                                             } catch (err: any) {
-                                                alert(err.message || '삭제 실패');
+                                                showAlert('오류', err.message || '삭제 실패');
                                             }
                                         }
                                     }}
@@ -596,6 +624,16 @@ function Detail() {
                     </div>
                 </div >
             </div >
+
+
+            {/* 공통 모달 적용 */}
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={closeModal}
+                title={modalConfig.title}
+            >
+                {modalConfig.message}
+            </Modal>
         </div >
     );
 }

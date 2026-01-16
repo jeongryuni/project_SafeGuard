@@ -148,7 +148,7 @@ public class ComplaintServiceImpl implements ComplaintService {
         if (complaint.getAddress() != null && !complaint.getAddress().isEmpty()) {
             String[] addrParts = complaint.getAddress().split(" ");
             if (addrParts.length > 0) {
-                String regionName = addrParts[0]; // 예: 서울특별시
+                String regionName = normalizeRegionName(addrParts[0]);
                 Agency regionAgency = agencyMapper.selectAgencyByName(regionName);
 
                 if (regionAgency != null) {
@@ -181,6 +181,46 @@ public class ComplaintServiceImpl implements ComplaintService {
             default:
                 return null;
         }
+    }
+
+    private String normalizeRegionName(String shortName) {
+        if (shortName == null)
+            return "";
+        if (shortName.startsWith("서울"))
+            return "서울특별시";
+        if (shortName.startsWith("부산"))
+            return "부산광역시";
+        if (shortName.startsWith("대구"))
+            return "대구광역시";
+        if (shortName.startsWith("인천"))
+            return "인천광역시";
+        if (shortName.startsWith("광주"))
+            return "광주광역시";
+        if (shortName.startsWith("대전"))
+            return "대전광역시";
+        if (shortName.startsWith("울산"))
+            return "울산광역시";
+        if (shortName.startsWith("세종"))
+            return "세종특별자치시";
+        if (shortName.startsWith("경기"))
+            return "경기도";
+        if (shortName.startsWith("강원"))
+            return "강원특별자치도";
+        if (shortName.startsWith("충북"))
+            return "충청북도";
+        if (shortName.startsWith("충남"))
+            return "충청남도";
+        if (shortName.startsWith("전북"))
+            return "전북특별자치도";
+        if (shortName.startsWith("전남"))
+            return "전라남도";
+        if (shortName.startsWith("경북"))
+            return "경상북도";
+        if (shortName.startsWith("경남"))
+            return "경상남도";
+        if (shortName.startsWith("제주"))
+            return "제주특별자치도";
+        return shortName;
     }
 
     /**
