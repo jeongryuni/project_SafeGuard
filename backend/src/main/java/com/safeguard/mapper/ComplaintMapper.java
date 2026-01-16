@@ -83,6 +83,8 @@ public interface ComplaintMapper {
 
     void deleteAllComplaints();
 
+    void deleteByUserNo(@Param("userNo") Long userNo);
+
     // =========================
     // origin/main (등록 플로우)
     // =========================
