@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { complaintsAPI, authAPI } from '../utils/api';
 
 function Detail() {
@@ -105,6 +105,17 @@ function Detail() {
         return <div className="container" style={{ padding: '100px', textAlign: 'center' }}>게시물을 찾을 수 없습니다.</div>;
     }
 
+    const location = useLocation();
+
+    const handleBack = () => {
+        const prevParams = location.state?.searchParams;
+        if (prevParams) {
+            navigate(`/list?${prevParams}`);
+        } else {
+            navigate('/list');
+        }
+    };
+
     // [Strict Access Control] 비공개 게시물 처리
     if (report.message === "비공개된 게시물입니다") {
         return (
@@ -115,7 +126,7 @@ function Detail() {
                     작성자와 담당 기관 관계자만 열람할 수 있습니다.
                 </p>
                 <button
-                    onClick={() => navigate('/list')}
+                    onClick={handleBack}
                     style={{
                         marginTop: '30px',
                         padding: '10px 20px',
@@ -193,7 +204,7 @@ function Detail() {
                 <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#64748b' }}>
                     <span style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>홈</span>
                     <span>&gt;</span>
-                    <span style={{ cursor: 'pointer' }} onClick={() => navigate('/list')}>민원 목록</span>
+                    <span style={{ cursor: 'pointer' }} onClick={handleBack}>민원 목록</span>
                     <span>&gt;</span>
                     <span style={{ color: 'var(--primary-color)', fontWeight: '600' }}>상세 보기</span>
                 </div>
@@ -329,7 +340,7 @@ function Detail() {
                                             try {
                                                 await complaintsAPI.delete(id);
                                                 alert('삭제되었습니다.');
-                                                navigate('/list');
+                                                handleBack();
                                             } catch (err: any) {
                                                 alert(err.message || '삭제 실패');
                                             }
@@ -573,7 +584,7 @@ function Detail() {
                         {/* List Button */}
                         <div style={{ marginTop: '60px', textAlign: 'center' }}>
                             <button
-                                onClick={() => navigate('/list')}
+                                onClick={handleBack}
                                 style={{
                                     padding: '14px 48px',
                                     backgroundColor: 'white',

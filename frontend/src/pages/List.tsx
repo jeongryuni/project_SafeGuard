@@ -102,38 +102,71 @@ function List() {
         setSearchParams({ page: String(newPage), search, category, status: statusParams, region: regionParams, sort, order, myAgencyOnly: String(myAgencyOnly) });
     };
 
-    const downloadExcel = () => {
-        if (complaints.length === 0) {
-            alert('데이터가 없습니다.');
-            return;
+    const downloadExcel = async () => {
+        try {
+            // Detect admin mode from URL
+            const isAdminPath = window.location.pathname.startsWith('/admin');
+            const role = localStorage.getItem('role');
+            const agencyNo = localStorage.getItem('agencyNo');
+
+            // 엑셀 다운로드용 파라미터 (현재 필터 조건 유지, limit은 전체 조회용으로 크게 설정)
+            const params: any = {
+                page: 1,
+                limit: 1000000,
+                search,
+                category,
+                status: statusParams,
+                sort,
+                order,
+                adminMode: isAdminPath,
+                myAgencyOnly
+            };
+
+            if (regionParams && regionParams !== '전체') {
+                params.region = regionParams;
+            }
+
+            if (isAdminPath && role === 'AGENCY' && agencyNo) {
+                params.agencyNo = agencyNo;
+            }
+
+            const data = await complaintsAPI.getList(params);
+            const allComplaints = data.complaints;
+
+            if (!allComplaints || allComplaints.length === 0) {
+                alert('데이터가 없습니다.');
+                return;
+            }
+
+            // CSV Header
+            const headers = ['민원번호', '제목', '카테고리', '지역', '상태', '작성일', '좋아요'];
+            const rows = allComplaints.map((c: any) => [
+                c.complaintNo,
+                `"${c.title.replace(/"/g, '""')}"`, // Escape quotes
+                c.category,
+                c.regionName || '-',
+                c.status,
+                formatDate(c.createdDate),
+                c.likeCount
+            ]);
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map((row: any[]) => row.join(','))
+            ].join('\n');
+
+            // Add BOM for Excel UTF-8 compatibility
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `complaints_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err: any) {
+            alert('엑셀 다운로드 중 오류가 발생했습니다: ' + err.message);
         }
-
-        // CSV Header
-        const headers = ['민원번호', '제목', '카테고리', '지역', '상태', '작성일', '좋아요'];
-        const rows = complaints.map((c: any) => [
-            c.complaintNo,
-            `"${c.title.replace(/"/g, '""')}"`, // Escape quotes
-            c.category,
-            c.regionName || '-',
-            c.status,
-            formatDate(c.createdDate),
-            c.likeCount
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
-        // Add BOM for Excel UTF-8 compatibility
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `complaints_export_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     };
 
     const handleDelete = async (e: React.MouseEvent, complaintNo: number) => {
@@ -460,7 +493,7 @@ function List() {
                                     {complaints.map((c) => (
                                         <tr
                                             key={c.complaintNo}
-                                            onClick={() => navigate(`/reports/${c.complaintNo}`)}
+                                            onClick={() => navigate(`/reports/${c.complaintNo}`, { state: { searchParams: searchParams.toString() } })}
                                             style={{
                                                 cursor: 'pointer',
                                                 transition: 'background-color 0.2s'
