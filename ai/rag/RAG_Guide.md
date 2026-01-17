@@ -14,6 +14,32 @@ Docker 컨테이너 환경(`safeguard-ai-rag`)에서 실행되며, FastAPI를 �
 - **배경**: 기존에는 민원인이 직접 카테고리를 선택해야 했으며, 잘못 선택 시 담당 공무원이 수동으로 재분류해야 하는 비효율이 존재했습니다.
 - **상세**: 특히 '도로'와 '건설', '환경'과 '위생' 등 경계가 모호한 민원의 오분류율이 높았습니다.
 
+### 1.3 시스템 흐름도 (System Flow)
+RAG 서비스가 외부 시스템(Backend) 및 내부 데이터 저장소(Milvus)와 상호작용하는 전체 흐름입니다.
+
+```mermaid
+graph LR
+    Client[🛡️ Backend] -->|HTTP POST /classify| API[FastAPI Server]
+    
+    subgraph "AI-RAG Container"
+        API --> Logic[Classification Service]
+        Logic -->|Text| Hybrid[Hybrid Search Engine]
+        
+        Hybrid -->|Semantic Query| Vector[Vector Search]
+        Hybrid -->|Keyword Query| BM25[BM25 Search]
+        
+        Vector & BM25 --> RRF[Reciprocal Rank Fusion]
+        RRF --> Rules[Domain Decision Rules]
+    end
+    
+    subgraph "Data Storage"
+        Vector <-->|gRPC| Milvus[(Milvus DB)]
+        BM25 <-->|File IO| LocalIndex[bm25_index.pkl]
+    end
+    
+    Rules -->|Result JSON| API
+```
+
 ---
 
 ---
@@ -33,6 +59,37 @@ Docker 컨테이너 환경(`safeguard-ai-rag`)에서 실행되며, FastAPI를 �
 
 ## 2. 파일 구조 및 역할 (File Structure and Roles)
 각 파일의 역할과 내부 핵심 기능을 상세히 기술합니다.
+
+### 2.0 연동 구조 (Implementation Structure)
+각 파이썬 모듈이 어떻게 유기적으로 연결되어 동작하는지 보여주는 클래스/모듈 다이어그램입니다.
+
+```mermaid
+classDiagram
+    class App {
+        +POST /classify
+        +POST /generate-title
+    }
+    class ClassificationService {
+        +classify_complaint()
+    }
+    class QueryEngine {
+        +ask(question)
+        -perform_vector_search()
+        -perform_bm25_search()
+    }
+    class TitleGenerator {
+        +generate_complaint_title()
+    }
+    class MilvusClient {
+        +connect()
+        +search()
+    }
+
+    App --> ClassificationService : Calls
+    App --> TitleGenerator : Calls
+    ClassificationService --> QueryEngine : Uses
+    QueryEngine --> MilvusClient : Connects
+```
 
 ### 2.1. `app.py`
 **역할**: RAG 서비스의 엔트리포인트이자 API 서버입니다. FastAPI 프레임워크를 기반으로 HTTP 요청을 처리합니다.
@@ -61,6 +118,41 @@ Docker 컨테이너 환경(`safeguard-ai-rag`)에서 실행되며, FastAPI를 �
       - 범용 법령(지방자치법 등)은 가중치를 낮추어 특정 기관으로 쏠리는 현상을 방지합니다 (Penalty Logic).
       - 사용자 질문에 포함된 키워드와 일치하는 기관에는 가중치를 더 부여합니다 (Bonus Logic).
   5.  **최종 결정 (Decision)**: 가장 높은 점수를 획득한 기관을 선정하고, 신뢰도(Confidence)와 판단 근거(Reasoning)를 생성합니다.
+
+#### 2.2.1 프로세싱 흐름도 (Processing Logic)
+`classification_service.py` 내부에서 일어나는 민원 분류의 단계별 상세 로직입니다.
+
+```mermaid
+flowchart TD
+    Start([User Input]) --> Preprocess[텍스트 전처리/정규화]
+    Preprocess --> HardRule{특정 키워드 발견?}
+    
+    HardRule -- Yes (불법주정차 등) --> Instant[즉시 분류 (Hard Rule)]
+    HardRule -- No --> Search[Hybrid Search 실행]
+    
+    subgraph "Retrieval & fusion"
+        Search --> Vec[Vector Search (Milvus)]
+        Search --> Key[BM25 Search (Kiwi)]
+        Vec & Key --> RRF[RRF 랭킹 융합]
+    end
+    
+    RRF --> Scoring[기본 점수 산정]
+    
+    subgraph "Domain Rules"
+        Scoring --> Bonus[Keyword Bonus (+Score)]
+        Bonus --> Penalty[Broad Law Penalty (*0.3)]
+        Penalty --> Mois[MOIS Guard (행안부 쏠림 방지)]
+    end
+    
+    Mois --> Threshold{Top1 - Top2 < 0.4 OR Conf < 0.45?}
+    
+    Threshold -- Yes --> Unknown[기분류 '기타']
+    Threshold -- No --> Success[최종 기관 선정]
+    
+    Instant --> Result([JSON Result])
+    Unknown --> Result
+    Success --> Result
+```
 
 ### 2.3. `query.py`
 **역할**: 사용자의 질문에 대해 실제 데이터베이스 검색을 수행하는 검색 엔진 모듈입니다.
