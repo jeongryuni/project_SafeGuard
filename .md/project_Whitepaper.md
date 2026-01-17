@@ -91,47 +91,63 @@ graph TD
 ## 3️⃣ 상세 기술 스택 (Detailed Technology Stack)
 
 ### 3.1 Frontend (User Interface)
-- **Core**: React 19, Vite 5.x, TypeScript
-- **Style**: **TailAdmin Template** 기반 (Tailwind CSS v4.1.18 - Dev)
-- **Map**: **Kakao Map API** (Clusterer, Polygon Hotspot Visualization)
-- **Charts**: ApexCharts, React-ApexCharts (실시간 대시보드 시각화)
-- **Icons**: Lucide React
-- **Features**: 30초 자동 갱신 대시보드, SLA 카운트다운, 모바일 반응형 UI.
+| Category | Technology | Version | Description |
+| :--- | :--- | :--- | :--- |
+| **Core** | **React** | **v19.2.0** | 최신 UI 라이브러리 (Server Components 호환) |
+| **Build** | **Vite** | **v7.2.4** | 초고속 HMR 지원 빌드 도구 |
+| **Language** | TypeScript | v5.3.3 | 정적 타입 안정성 확보 |
+| **Styling** | **Tailwind CSS** | **v4.1.18** | Utility-first CSS 프레임워크 (TailAdmin 기반) |
+| **Routing** | React Router | v7.11.0 | SPA 라우팅 처리 |
+| **Visualization** | **ApexCharts** | v5.3.6 | 실시간 대시보드 차트 렌더링 |
+| **Maps** | Kakao Map API | - | 클러스터링 및 폴리곤(Hotspot) 시각화 |
+| **UI Components** | Lucide React | v0.562.0 | 경량화된 아이콘 라이브러리 |
+| **Animation** | Framer Motion | v12.25.0 | 자연스러운 UI 전환 애니메이션 |
 
 ### 3.2 Backend (Core System)
-- **Framework**: Spring Boot 3.4.1 (Java 17)
-- **Database**: PostgreSQL 16 (w/ PostGIS Extension)
-- **ORM Strategy (Hybrid)**:
-    - **JPA (Hibernate Spatial)**: 도메인 엔티티 관리, CRUD, 위치 데이터 처리 (Point, Polygon).
-    - **MyBatis 3.0.4**: 복잡한 통계 쿼리, 대시보드 데이터 집계 최적화.
-- **Security**: Spring Security + JWT (Stateless Authentication).
-- **Storage**: AWS S3 SDK (MinIO 연동).
+| Category | Technology | Version | Description |
+| :--- | :--- | :--- | :--- |
+| **Framework** | **Spring Boot** | **v3.4.1** | 엔터프라이즈급 백엔드 애플리케이션 프레임워크 |
+| **Language** | **Java** | **17 (LTS)** | 안정성과 성능을 보장하는 LTS 버전 |
+| **ORM (Hybrid)** | **MyBatis** | v3.0.4 | 복잡한 통계/대시보드 쿼리 최적화 |
+| | **Hibernate Spatial** | - | PostgreSQL PostGIS 지리 정보(GIS) 처리 |
+| **Database** | **PostgreSQL** | **v16.0** | 관계형 데이터 및 지리 정보(PostGIS) 저장 |
+| **Security** | Spring Security | - | JWT 기반 Stateless 인증/인가 (`io.jsonwebtoken:0.11.5`) |
+| **Storage** | AWS SDK (S3) | v3.3.0 | MinIO Object Storage 연동 |
+| **API Docs** | Swagger UI | - | API 명세 자동화 (Optional) |
 
-### 3.3 AI Layer (Intelligent Services)
-모든 AI 서비스는 **FastAPI**를 기반으로 마이크로서비스로 구축되었으며, **Prometheus Audit Log**를 미들웨어로 탑재하고 있습니다.
+### 3.3 AI Service Mesh (Microservices)
+모든 AI 서비스는 **Python 3.9+** 및 **FastAPI (v0.109+)** 기반으로 구축되었습니다.
 
-#### A. STT (Speech-to-Text) Service
-- **Model**: OpenAI Whisper (`base` model)
-- **Pipeline**:
-    1.  **FFmpeg `afftdn` Filter**: 배경 소음(바람소리 등) 실시간 주파수 제거.
-    2.  **FFmpeg Normalize**: 16kHz 리샘플링 및 볼륨 평탄화.
-    3.  **Whisper Inference**: GPU/CPU 가속 추론.
-    4.  **Anti-Hallucination Filter**: 침묵 구간 반복 생성 억제, 단문/특수문자 필터링.
+#### A. STT (Speech-to-Text)
+| Library | Version | Role |
+| :--- | :--- | :--- |
+| **OpenAI Whisper** | `base` model | 다국어/한국어 음성 인식 엔진 |
+| **FFmpeg** | `afftdn` filter | **[Core]** 주파수 기반 배경 소음 제거 |
+| **ffmpeg-normalize** | - | 오디오 볼륨 평탄화 (EBU R128 표준) |
 
-#### B. RAG (Retrieval-Augmented Generation) Service
-- **Vector DB**: Milvus 2.3
-- **Classification Engine**: `classification_service.py`
-- **Search Strategy**: **Hybrid RAG (implemented in `query.py`)**
-    - **Semantic Search**: `sentence-transformers` -> 의미 기반 검색.
-    - **Keyword Search**: `Rank-BM25` + `Kiwipiepy` -> 정확한 용어 매칭.
-    - **RRF (Reciprocal Rank Fusion)**: `Score = 1 / (k + rank + 1)` 공식을 사용하여 두 검색 결과의 순위를 공정하게 융합.
-- **Data**: 대한민국 주요 법령 PDF (도로교통법, 건축법 등).
+#### B. RAG (Retrieval-Augmented Generation)
+| Library | Version | Role |
+| :--- | :--- | :--- |
+| **PyMilvus** | v2.3.0 | 고성능 벡터 데이터베이스 클라이언트 |
+| **Sentence-Transformers** | v2.3.0 | 한국어 임베딩 모델 (`snunlp/KR-SBERT` 등) |
+| **Kiwipiepy** | v0.16.2 | 한국어 형태소 분석기 (명사 추출) |
+| **Rank-BM25** | v0.2.2 | 키워드 기반 검색 알고리즘 |
 
-#### C. YOLO (Visual Classification) Service
-- **Model**: YOLOv8 (Ultralytics) Custom Fine-tuned (`infer_image_complaint.pt`)
-- **Action**: 민원 이미지 업로드 시 객체 탐지 및 자동 분류.
-- **Target**: 불법주정차, 쓰레기, 현수막, 보행방해물 등 5대 민원 탐지.
-- **Output**: 탐지된 객체 유형에 따라 담당 기관(Agency) 자동 매핑 (예: 불법주정차 -> 경찰청).
+#### C. YOLO (Visual Classification)
+| Library | Version | Role |
+| :--- | :--- | :--- |
+| **Ultralytics YOLO** | **v8 (YOLOv8)** | 객체 탐지 SOTA 모델 |
+| **OpenCV** | headless | 고속 이미지 전처리 |
+| **PyTorch** | - | 딥러닝 추론 엔진 (CPU Optimization) |
+
+### 3.4 Infrastructure & DevOps
+| Category | Tool | Description |
+| :--- | :--- | :--- |
+| **Container** | **Docker Compose** | 멀티 컨테이너 오케스트레이션 |
+| **Proxy** | Nginx | 리버스 프록시 및 정적 파일 서빙 |
+| **Monitoring** | **Prometheus** | 매트릭 수집 (`http_requests_total` 등) |
+| **Storage** | **MinIO** | S3 호환 로컬 오브젝트 스토리지 |
+| **Vector DB** | **Milvus Standalone** | RAG용 벡터 검색 엔진 |
 
 ---
 
@@ -151,6 +167,39 @@ graph TD
 5.  **저장 및 응답**:
     - 변환된 텍스트, 마스킹된 이미지 경로, 추천된 기관 정보를 DB에 저장(`Insert`).
     - 사용자에게 접수 완료 메시지 및 예상 민원 분류 결과 즉시 반환.
+
+### 4.2 시스템 데이터 흐름도 (Data Processing Sequence)
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 Citizen
+    participant FE as 📱 Frontend (React)
+    participant BE as 🛡️ Backend (Spring)
+    participant STT as 🎙️ AI-STT
+    participant YOLO as 📷 AI-YOLO
+    participant RAG as ⚖️ AI-RAG
+    participant DB as 💾 PostgreSQL (PostGIS)
+
+    User->>FE: 1. 민원 접수 (음성/사진/텍스트)
+    
+    par Parallel Processing
+        FE->>BE: 2a. 오디오 전송 (Multipart)
+        BE->>STT: 3a. STT 변환 요청
+        STT-->>BE: 4a. 텍스트 반환 ("불법주차...")
+        
+        FE->>BE: 2b. 이미지 전송 (Multipart)
+        BE->>YOLO: 3b. 객체 마스킹 요청
+        YOLO-->>BE: 4b. 마스킹 이미지 & 객체 유형 반환
+    end
+
+    BE->>RAG: 5. 민원 분류 요청 (텍스트)
+    note right of RAG: Hybrid Search + RRF + Domain Rules
+    RAG-->>BE: 6. 기관(Agency) & 법령 근거 반환
+
+    BE->>DB: 7. 민원 데이터 저장 (INSERT)
+    BE-->>FE: 8. 접수 완료 및 결과 응답
+    FE-->>User: 9. 결과 확인 (지도/리스트)
+```
 
 ---
 
