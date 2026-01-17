@@ -14,7 +14,7 @@ Docker 컨테이너 환경(`safeguard-ai-rag`)에서 실행되며, FastAPI를 �
 - **배경**: 기존에는 민원인이 직접 카테고리를 선택해야 했으며, 잘못 선택 시 담당 공무원이 수동으로 재분류해야 하는 비효율이 존재했습니다.
 - **상세**: 특히 '도로'와 '건설', '환경'과 '위생' 등 경계가 모호한 민원의 오분류율이 높았습니다.
 
-### 1.3 시스템 흐름도 (System Flow)
+### 1.4 전체 흐름도 (Overall Flow)
 RAG 서비스가 외부 시스템(Backend) 및 내부 데이터 저장소(Milvus)와 상호작용하는 전체 흐름입니다.
 
 ```mermaid
@@ -40,7 +40,7 @@ graph LR
     Rules -->|Result JSON| API
 ```
 
-### 1.4 프론트엔드 연동 구조 (Frontend Integration)
+### 1.5 프론트엔드 연동 구조 (Frontend Integration)
 사용자가 텍스트 민원을 작성할 때, 프론트엔드(React)에서 백엔드를 거쳐 RAG 서비스로 이어지는 호출 흐름입니다.
 
 ```mermaid
@@ -69,9 +69,6 @@ sequenceDiagram
     React->>User: "식품의약품안전처" 추천 표시
 ```
 
----
-
----
 
 ## 1.1. 기술 스택 (Technical Stack)
 
@@ -148,41 +145,6 @@ classDiagram
       - 사용자 질문에 포함된 키워드와 일치하는 기관에는 가중치를 더 부여합니다 (Bonus Logic).
   5.  **최종 결정 (Decision)**: 가장 높은 점수를 획득한 기관을 선정하고, 신뢰도(Confidence)와 판단 근거(Reasoning)를 생성합니다.
 
-#### 2.2.1 프로세싱 흐름도 (Processing Logic)
-`classification_service.py` 내부에서 일어나는 민원 분류의 단계별 상세 로직입니다.
-
-```mermaid
-flowchart TD
-    Start([User Input]) --> Preprocess[텍스트 전처리/정규화]
-    Preprocess --> HardRule{특정 키워드 발견?}
-    
-    HardRule -- Yes (불법주정차 등) --> Instant[즉시 분류 (Hard Rule)]
-    HardRule -- No --> Search[Hybrid Search 실행]
-    
-    subgraph "Retrieval & fusion"
-        Search --> Vec[Vector Search (Milvus)]
-        Search --> Key[BM25 Search (Kiwi)]
-        Vec & Key --> RRF[RRF 랭킹 융합]
-    end
-    
-    RRF --> Scoring[기본 점수 산정]
-    
-    subgraph "Domain Rules"
-        Scoring --> Bonus[Keyword Bonus (+Score)]
-        Bonus --> Penalty[Broad Law Penalty (*0.3)]
-        Penalty --> Mois[MOIS Guard (행안부 쏠림 방지)]
-    end
-    
-    Mois --> Threshold{Top1 - Top2 < 0.4 OR Conf < 0.45?}
-    
-    Threshold -- Yes --> Unknown[기분류 '기타']
-    Threshold -- No --> Success[최종 기관 선정]
-    
-    Instant --> Result([JSON Result])
-    Unknown --> Result
-    Success --> Result
-```
-
 ### 2.3. `query.py`
 **역할**: 사용자의 질문에 대해 실제 데이터베이스 검색을 수행하는 검색 엔진 모듈입니다.
 
@@ -243,11 +205,9 @@ flowchart TD
     - `*.pdf`: 분석 대상이 되는 법령 PDF 원본 파일들.
     - `bm25_index.pkl`: `ingest.py` 실행 시 생성되는 BM25 키워드 인덱스 파일.
 
----
+### 2.10 데이터 구조 및 인프라 (Data Structure & Infrastructure)
 
-## 3. Milvus 데이터 구조 및 인프라 (Data & Infrastructure)
-
-### 3.1. 3가지 핵심 데이터 저장소 (The 3 Pillars of Data)
+#### 3가지 핵심 데이터 저장소 (The 3 Pillars of Data)
 `ingest.py` 실행 시 생성되는 RAG 시스템의 3가지 데이터 형태입니다.
 
 1. **Milvus Vector DB (의미 저장소)**
@@ -259,7 +219,7 @@ flowchart TD
 3. **Raw Source Files (원본 저장소)**
     - **역할**: 데이터의 원천(Source of Truth). 분석 대상 PDF 파일.
 
-### 3.2. Milvus 인프라 구성 (Infrastructure Components)
+#### Milvus 인프라 구성 (Infrastructure Components)
 Docker로 실행되는 Milvus 시스템의 내부 구조입니다.
 
 | 컴포넌트 | 역할 | 기능 |
@@ -270,34 +230,90 @@ Docker로 실행되는 Milvus 시스템의 내부 구조입니다.
 
 ---
 
-## 4. 설치 및 데이터 적재 가이드 (Installation & Ingestion)
+## 3. 핵심 기술 및 알고리즘 (Core Technology and Algorithms)
+RAG 서비스의 정확도를 보장하는 핵심 기술적 요소들입니다.
 
-### 4.1. 서비스 실행 (Docker)
-```bash
-docker-compose up -d
-# milvus-standalone, etcd, minio 컨테이너 정상 구동 확인
-```
+### 3.1 하이브리드 검색 (Hybrid Search)
+의미적 유사성과 키워드 일치를 동시에 고려하여 검색 품질을 극대화합니다.
+- **Vector Search (Semantic)**: `SentenceTransformers`로 텍스트를 임베딩하여 문맥적 의미가 유사한 문서를 찾습니다. (예: "식당 위생" ↔ "식품위생법")
+- **BM25 Search (Lexical)**: `Kiwi` 형태소 분석을 통해 정확한 단어 매칭을 수행합니다. (예: "신고"라는 구체적 단어 포함 여부)
 
-### 4.2. 법령 데이터 적재 (Ingestion)
-```bash
-# RAG 컨테이너 내부에서 적재 스크립트 실행
-docker exec -it safeguard-ai-rag python ingest.py
-```
-> 성공 시 "Successfully inserted..." 메시지 출력 및 `bm25_index.pkl` 파일 생성됨.
+### 3.2 RRF (Reciprocal Rank Fusion)
+두 가지 검색 결과(Vector, BM25)를 공정하게 통합하는 랭킹 알고리즘입니다.
+- **수식**: $Score(d) = \sum \frac{1}{k + rank(d)}$
+- 어느 한쪽 검색 엔진에서만 상위에 랭크되어도, 두 엔진 모두에서 애매한 순위인 것보다 높은 점수를 받도록 설계되었습니다.
 
----
-
-## 5. 실행 가이드 (Server Run)
-```bash
-# 전체 서비스 재빌드 및 실행
-docker-compose up -d --build
-```
-- API 서버 포트: **8001**
-- Swagger 문서: `http://localhost:8001/docs`
+### 3.3 도메인 보정 점수 (Domain Scoring)
+단순 검색 결과에 의존하지 않고, 행정 도메인 특화 규칙을 적용하여 최종 점수를 산출합니다.
+- **Query Hint**: 사용자 입력에서 "불법주차", "소음" 등 특정 부서를 강력하게 암시하는 단어가 발견되면 기본 점수(`+3.0`)를 부여하고 시작합니다.
+- **Keyword Match**: 분류된 기관의 핵심 업무 키워드가 포함되면 추가 가산점을 부여합니다.
 
 ---
 
-## 6. API 명세 (Specification)
+## 4. 환각 및 오인식 차단 매커니즘 (Hallucination & Misclassification Prevention)
+LLM 및 검색 기반 AI의 고질적인 문제인 환각(Hallucination)과 오분류를 방지하기 위한 안전장치입니다.
+
+### 4.1 MOIS Guard (행정안전부 쏠림 방지)
+- **문제**: "민원 처리에 관한 법률" 등 행정안전부 소관의 법령은 거의 모든 민원과 키워드가 겹칩니다. 이로 인해 모호한 민원이 모두 행안부로 쏠리는 현상이 발생합니다.
+- **해결**: 사용자 입력에 행안부 고유 업무(예: "주민등록", "등본") 관련 키워드가 없다면, 행안부의 최대 점수를 강제로 제한(`Constraint`)하여 오분류를 차단합니다.
+
+### 4.2 Broad Law Penalty (범용 법령 페널티)
+- **원리**: 변별력이 낮은 범용 법령(지방자치법, 행정절차법 등)이 검색 결과 상위에 오를 경우, 해당 점수에 `0.35`를 곱하여 영향력을 대폭 축소합니다.
+- **효과**: "법"이라는 단어 때문에 엉뚱한 부서로 배정되는 것을 막습니다.
+
+### 4.3 Confidence Threshold (신뢰도 임계값)
+- **Hard Threshold**: 최종 산출된 신뢰도 점수가 `0.45` 미만이면 결과를 버리고 **'기타(수동 분류)'**로 처리합니다.
+- **Soft Margin**: 1순위와 2순위 기관의 점수 차이가 `0.4` 미만인 '박빙' 상황에서도 위험을 감수하지 않고 '기타'로 돌려 안전성을 확보합니다.
+
+---
+
+## 5. 스트림 처리 및 분류구조 (Classification Structure & Pipeline)
+RAG 서비스는 스트림(Stream) 방식이 아닌 HTTP 요청/응답 기반의 파이프라인 구조로 동작하지만, 내부적으로는 데이터가 흐르듯 단계별로 처리됩니다.
+
+### 5.1 분류 파이프라인 (Sequential Pipeline)
+```mermaid
+flowchart TD
+    Start([User Input]) --> Preprocess[텍스트 전처리/정규화]
+    Preprocess --> HardRule{특정 키워드 발견?}
+    
+    HardRule -- Yes (불법주정차 등) --> Instant[즉시 분류 (Hard Rule)]
+    HardRule -- No --> Search[Hybrid Search 실행]
+    
+    subgraph "Retrieval & fusion"
+        Search --> Vec[Vector Search (Milvus)]
+        Search --> Key[BM25 Search (Kiwi)]
+        Vec & Key --> RRF[RRF 랭킹 융합]
+    end
+    
+    RRF --> Scoring[기본 점수 산정]
+    
+    subgraph "Safety Mechanisms"
+        Scoring --> Bonus[Keyword Bonus]
+        Bonus --> Penalty[Broad Law Penalty]
+        Penalty --> Mois[MOIS Guard]
+    end
+    
+    Mois --> Threshold{Confidence Check}
+    
+    Threshold -- Low Confidence --> Unknown[기분류 '기타']
+    Threshold -- High Confidence --> Success[최종 기관 선정]
+    
+    Instant --> Result([JSON Result])
+    Unknown --> Result
+    Success --> Result
+```
+
+### 5.2 계층적 분류 구조
+단순히 기관만 분류하는 것이 아니라, 대-중-소 카테고리를 계층적으로 추론합니다.
+- **Agency (기관)**: 국토교통부, 경찰청 등 (물리적 처리를 담당하는 주체)
+- **Category (분류)**: 교통, 보건, 시설 등 (민원의 성격)
+- **Keywords (근거)**: 판단의 근거가 된 핵심 단어들
+
+---
+
+
+
+## 6. API 명세 (API Specification)
 
 ### 6.1. 기관 분류 (`POST /classify`)
 - **설명**: 사용자 텍스트 민원을 분석하여 담당 기관을 반환합니다.
@@ -336,9 +352,30 @@ docker-compose up -d --build
 
 ---
 
-## 7. 요구사항 정의 (Requirements)
+## 7. 설치 및 실행 가이드 (Installation & Run Guide)
 
-### 7.1 기능 요구사항 (Functional)
+### 7.1. 서비스 실행 (Docker)
+```bash
+# 전체 서비스 빌드 및 실행
+docker-compose up -d --build
+
+# 실행 상태 확인
+docker ps | grep ai-rag
+```
+- API 서버 포트: **8001**
+- Swagger 문서: `http://localhost:8001/docs`
+
+### 7.2. 법령 데이터 적재 (Data Ingestion)
+```bash
+# RAG 컨테이너 내부에서 적재 스크립트 실행 (최초 1회)
+docker exec -it safeguard-ai-rag python ingest.py
+```
+
+---
+
+## 8. 요구사항 정의 (Requirements)
+
+### 8.1 기능 요구사항 (Functional)
 | ID | 요구사항 | 설명 | 중요도 |
 | :-- | :--- | :--- | :--- |
 | FR-1 | **자동 분류** | 텍스트 입력 시 1초 이내에 담당 기관/부서를 추천해야 한다. | Must |
@@ -346,47 +383,52 @@ docker-compose up -d --build
 | FR-3 | **제목 생성** | 민원 내용 요약 및 주소 기반의 표준화된 제목을 생성해야 한다. | Should |
 | FR-4 | **오분류 방지** | 신뢰도가 낮거나(0.45 미만) 경합 상황일 경우 '기타'로 분류하여 수동 처리를 유도해야 한다. | Should |
 
-### 7.2 비기능 요구사항 (Non-Functional)
+### 8.2 비기능 요구사항 (Non-Functional)
 - **성능**: 단일 요청 처리 시간(Latency) **2초 이내** (Milvus 검색 포함).
 - **가용성**: AI 서비스 컨테이너가 중단되더라도 재시작 정책(`restart: unless-stopped`)에 의해 자동 복구되어야 한다.
 
 ---
 
-## 8. 예외 및 오류 처리 (Exception & Error Handling)
+## 9. 예외 및 오류 처리 (Exception & Error Handling)
 
-### 8.1 주요 오류 시나리오
+### 9.1 주요 오류 시나리오
 - **Milvus 연결 실패**: RAG 검색 불가 시, 로그(`logger.error`)를 남기고 '기타'로 Fallback 처리 (System availability 우선).
 - **검색 결과 없음**: 법령 매칭이 안 될 경우 `confidence: 0.0`으로 응답하며, 프론트엔드에서는 "분류 불가" 메시지를 표시하지 않고 담당자 확인 필요 상태로 처리.
 
 ---
 
-## 9. 품질 및 정확도 관리 (Quality Control)
+## 10. 품질 및 정확도 신뢰도 관리 (Quality & Accuracy Management)
 
-### 9.1 품질 보증 로직
+### 10.1 품질 보증 로직
 - **Hybrid Search**: 단순 키워드 매칭(BM25)의 한계를 벡터 검색으로 보완.
 - **MOIS Guard**: '행정안전부' 관련 키워드(등본, 전입 등)가 없는데도 범용 법령 때문에 행안부로 분류되는 것을 방지하는 **Penalty Logic** 적용 (`classification_service.py`).
 - **Threshold**: Top1, Top2 기관 점수 차이가 0.4 미만일 경우 과감하게 보류('기타') 처리하여 오분류 리스크 최소화.
 
+### 10.2 테스트 전략 (Test Strategy)
+- **Unit Test**: 규칙 및 점수 산정 로직 단위 테스트.
+- **Integration Test**: 데이터 적재 및 검색 엔진 연동 테스트.
+- **Manual Test**: Swagger를 통한 다양한 케이스 검증.
+
 ---
 
-## 10. 보안 설계 (Security Design)
+## 11. 보안 설계 (Security Design)
 
 - **Network Isolation**: `safeguard-network` 내부에서만 통신하며, 외부(Host)에는 API 포트(8001)만 노출.
 - **No Sensitive Data**: RAG가 사용하는 데이터는 공개된 '법령' 데이터이므로 개인정보 이슈가 없음. 민원 텍스트는 저장하지 않고 휘발성으로 처리.
 
 ---
 
-## 11. 운영 및 모니터링 (Operations & Monitoring)
+## 12. 운영 및 모니터링 (Operations & Monitoring)
 
-### 11.1 모니터링 지표 (Prometheus)
+### 12.1 모니터링 지표 (Prometheus)
 - **`http_requests_total`**: 분류 요청 트래픽량 감시.
 - **`http_request_duration_seconds`**: RAG 추론(검색) 속도 모니터링. P99 지연 시간 3초 초과 시 알림 필요.
 
-### 11.2 장애 대응
+### 12.2 장애 대응
 - **서비스 다운 시**: Docker Compose Healthcheck를 통해 자동 재시작.
 - **지속적 오분류 발견 시**: `KEYWORD_TO_AGENCY` 매핑 테이블 업데이트 또는 `BROAD_LAWS` 리스트 튜닝 후 재배포.
 
-### 11.3 로그 분석 및 점수 체계 (Log Analysis & Scoring)
+### 12.3 로그 분석 및 점수 체계 (Log Analysis & Scoring)
 실제 운영 시 발생하는 로그의 예시와, 각 점수가 어떻게 산출되는지 상세히 설명합니다.
 
 #### A. 실제 로그 예시 (Log Example)
@@ -433,9 +475,5 @@ INFO:ai.rag.classification_service:----------------------------------------
 
 ---
 
-## 12. 테스트 전략 (Test Strategy)
 
-- **Unit Test**: `classification_service.py`의 로직(규칙, 점수 계산) 단위 테스트.
-- **Integration Test**: `ingest.py` 실행 후 Milvus에 데이터가 정상 적재되었는지, `query.py`가 데이터를 잘 가져오는지 통합 테스트.
-- **Manual Test**: Swagger UI (`/docs`)를 통해 다양한 민원 케이스(주차, 소음, 위생 등)를 입력하여 예상된 기관이 나오는지 검증.
 
