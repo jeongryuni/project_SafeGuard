@@ -153,7 +153,12 @@
     <!-- District Counts (Sigungu Aggregation) -->
     <select id="selectDistrictCounts" resultType="com.safeguard.dto.MapDistrictDto">
         SELECT
-            DISTINCT SPLIT_PART(sf.addr_text, ' ', 2) AS name,
+            CASE
+                WHEN sf.addr_text LIKE '%광역시 %' OR sf.addr_text LIKE '세종특별자치시 %' THEN
+                    SPLIT_PART(sf.addr_text, ' ', 1)
+                ELSE
+                    TRIM(SPLIT_PART(sf.addr_text, ' ', 1) || ' ' || COALESCE(SUBSTRING(SPLIT_PART(sf.addr_text, ' ', 2) FROM '(.+시)'), SPLIT_PART(sf.addr_text, ' ', 2)))
+            END AS name,
             COUNT(DISTINCT c.complaint_no) AS count
         FROM complaint c
         JOIN spatial_feature sf ON sf.complaint_no = c.complaint_no

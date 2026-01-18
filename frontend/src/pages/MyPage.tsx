@@ -14,6 +14,22 @@ function MyPage() {
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
+    // [추가] 공통 알림 모달 상태
+    const [alertState, setAlertState] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: undefined as (() => void) | undefined
+    });
+
+    // [추가] 페이지네이션 상태
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
+
+    const showAlert = (title: string, message: string, onConfirm?: () => void) => {
+        setAlertState({ isOpen: true, title, message, onConfirm });
+    };
+
     const getStatusText = (status: string) => {
         switch (status) {
             case 'UNPROCESSED': return '미처리';
@@ -56,7 +72,7 @@ function MyPage() {
 
     const handleSearchAddress = () => {
         if (!(window as any).daum || !(window as any).daum.Postcode) {
-            alert('주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+            showAlert('안내', '주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
@@ -75,20 +91,20 @@ function MyPage() {
         e.preventDefault();
         try {
             await usersAPI.updateProfile(editData);
-            alert('정보가 수정되었습니다.');
+            showAlert('정보 수정', '정보가 성공적으로 수정되었습니다.');
             setIsEditing(false);
             // 정보 갱신
             const updated = await usersAPI.getMe();
             setUserInfo(updated);
         } catch (err: any) {
-            alert(err.message);
+            showAlert('오류', err.message);
         }
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         if (pwData.newPassword !== pwData.confirmPassword) {
-            alert('새 비밀번호가 일치하지 않습니다.');
+            showAlert('비밀번호 불일치', '새 비밀번호가 일치하지 않습니다.');
             return;
         }
         try {
@@ -96,11 +112,11 @@ function MyPage() {
                 currentPassword: pwData.currentPassword,
                 newPassword: pwData.newPassword
             });
-            alert('비밀번호가 변경되었습니다.');
+            showAlert('비밀번호 변경', '비밀번호가 성공적으로 변경되었습니다.');
             setIsChangingPw(false);
             setPwData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err: any) {
-            alert(err.message);
+            showAlert('오류', err.message);
         }
     };
 
@@ -111,11 +127,12 @@ function MyPage() {
     const confirmDeleteAccount = async () => {
         try {
             await usersAPI.deleteAccount();
-            alert('탈퇴 처리가 완료되었습니다.');
-            localStorage.clear();
-            window.location.href = '/';
+            showAlert('탈퇴 완료', '탈퇴 처리가 완료되었습니다.', () => {
+                localStorage.clear();
+                window.location.href = '/';
+            });
         } catch (err: any) {
-            alert(err.message);
+            showAlert('오류', err.message);
         } finally {
             setIsDeleteModalOpen(false);
         }
@@ -132,13 +149,26 @@ function MyPage() {
         ? myReports
         : myReports.filter(r => r.status === filterStatus);
 
+    // [추가] 페이지네이션된 목록 계산
+    const paginatedReports = filteredReports.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    const totalPages = Math.ceil(filteredReports.length / ITEMS_PER_PAGE);
+
+    // 필터 변경 시 페이지 초기화
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterStatus]);
+
     return (
         <div className="mypage" style={{ padding: '60px 0', backgroundColor: '#F0F2F5', minHeight: '100vh' }}>
             <div className="container" style={{ maxWidth: '1200px' }}>
                 {/* Header Section */}
                 <div style={{ marginBottom: '40px', textAlign: 'left' }}>
                     <h2 style={{ color: '#1E293B', fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>마이페이지</h2>
-                    <p style={{ color: '#64748B', fontSize: '1.1rem' }}>내 활동 현황과 회원 정보를 관리할 수 있습니다.</p>
+                    <p style={{ color: '#64748B', fontSize: '1.1rem' }}>내 활동 현황과 회원 정보를 관리할 수 있습니다. (목록 당 {ITEMS_PER_PAGE}개 표시)</p>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', alignItems: 'start' }}>
@@ -222,7 +252,7 @@ function MyPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredReports && filteredReports.length > 0 ? filteredReports.map((report) => (
+                                        {paginatedReports && paginatedReports.length > 0 ? paginatedReports.map((report) => (
                                             <tr
                                                 key={report.complaintNo}
                                                 style={{
@@ -268,12 +298,46 @@ function MyPage() {
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#AAA' }}>내역이 없습니다. {filterStatus !== 'ALL'}</td>
+                                                <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#AAA' }}>내역이 없습니다.</td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* [추가] 페이지네이션 UI */}
+                            {totalPages > 1 && (
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    marginTop: '30px'
+                                }}>
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        style={pageButtonStyle(currentPage === 1)}
+                                    >
+                                        이전
+                                    </button>
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button
+                                            key={i + 1}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            style={pageNumberButtonStyle(currentPage === i + 1)}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        style={pageButtonStyle(currentPage === totalPages)}
+                                    >
+                                        다음
+                                    </button>
+                                </div>
+                            )}
                         </section>
                     </main>
                 </div>
@@ -379,6 +443,19 @@ function MyPage() {
                     </p>
                 </div>
             </Modal>
+
+            {/* 공통 알림 모달 */}
+            <Modal
+                isOpen={alertState.isOpen}
+                onClose={() => setAlertState(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={alertState.onConfirm}
+                title={alertState.title}
+                confirmText="확인"
+            >
+                <div style={{ textAlign: 'center', color: '#475569' }}>
+                    {alertState.message}
+                </div>
+            </Modal>
         </div>
     );
 }
@@ -431,5 +508,28 @@ const secondaryButtonStyle = {
     padding: '14px', borderRadius: '12px', backgroundColor: '#F1F5F9', color: '#475569',
     border: 'none', fontWeight: '700', cursor: 'pointer', flex: 1
 };
+
+const pageButtonStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: '8px 16px',
+    borderRadius: '8px',
+    border: '1px solid #E2E8F0',
+    backgroundColor: disabled ? '#F8FAFC' : 'white',
+    color: disabled ? '#94A3B8' : '#475569',
+    fontWeight: '600',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'all 0.2s'
+});
+
+const pageNumberButtonStyle = (active: boolean): React.CSSProperties => ({
+    width: '40px',
+    height: '40px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: active ? '#7c3aed' : 'transparent',
+    color: active ? 'white' : '#475569',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+});
 
 export default MyPage;
