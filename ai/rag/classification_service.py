@@ -45,6 +45,10 @@ KEYWORD_TO_AGENCY = {
     "도로교통": "경찰청",
     "교통위반": "경찰청",
     "불법주정차": "경찰청",
+    "불법정차": "경찰청",
+    "불법 정차": "경찰청",
+    "불법 주차": "경찰청",
+    "정차": "경찰청",
     "신호위반": "경찰청",
     "과속": "경찰청",
     "음주운전": "경찰청",
@@ -597,8 +601,8 @@ def classify_complaint(user_query: str) -> dict:
     5. 최종 결정
     """
 
-    # 1. Hard Rule: 불법주정차는 무조건 경찰청
-    if (contains_keyword_ignore_space(user_query, "주정차") or contains_keyword_ignore_space(user_query, "주차")) and (
+    # 1. Hard Rule: 불법주정차(주차/정차 포함)는 무조건 경찰청
+    if (any(contains_keyword_ignore_space(user_query, k) for k in ["주정차", "주차", "정차"])) and (
         contains_keyword_ignore_space(user_query, "불법")
         or any(contains_keyword_ignore_space(user_query, k) for k in ["단속", "신고", "조치", "위반"])
     ):
