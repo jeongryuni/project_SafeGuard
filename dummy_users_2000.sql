@@ -241,9 +241,41 @@ BEGIN
 
     END LOOP;
 
+    END LOOP;
+
+    -- 3) 공간 정보 (Spatial Feature) 생성
+    --    PostGIS가 활성화되어 있으므로 complaint의 lat/lon을 geometry로 변환 저장
+    INSERT INTO spatial_feature (feature_type, geom, addr_text, complaint_no, created_at)
+    SELECT 
+        'POINT',
+        ST_SetSRID(ST_Point(longitude, latitude), 4326),
+        address,
+        complaint_no,
+        created_date
+    FROM complaint;
+
+    -- 4) 좋아요 (Complaint Like) 데이터 생성 (일부 민원에 대해)
+    --    약 30%의 민원에 대해 1~50개의 좋아요 생성
+    FOR v_complaint_id IN (SELECT complaint_no FROM complaint TABLESAMPLE BERNOULLI(30)) LOOP
+         -- 해당 민원에 대해 랜덤 유저들이 좋아요 누름
+         INSERT INTO complaint_like (complaint_no, user_no, created_at)
+         SELECT 
+             v_complaint_id,
+             user_no,
+             CURRENT_TIMESTAMP - (random() * interval '1 year')
+         FROM app_user 
+         ORDER BY random()
+         LIMIT floor(random() * 50 + 1)
+         ON CONFLICT DO NOTHING;
+    END LOOP;
+
 END $$;
 
 -- 결과 확인
 SELECT 'Users Created' as item, count(*) as count FROM app_user
 UNION ALL
-SELECT 'Complaints Created', count(*) FROM complaint;
+SELECT 'Complaints Created', count(*) FROM complaint
+UNION ALL
+SELECT 'Spatial Features', count(*) FROM spatial_feature
+UNION ALL
+SELECT 'Total Likes', count(*) FROM complaint_like;
