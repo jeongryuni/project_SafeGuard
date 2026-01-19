@@ -74,6 +74,30 @@ KEYWORD_TO_AGENCY = {
     "도로파손": "국토교통부",
     "도로포장": "국토교통부",
     "도로포장불량": "국토교통부",
+    "가로등":"국토교통부",
+    "가로등 설치":"국토교통부",
+    "가로등 설치 신청":"국토교통부",
+    "아스팔트": "국토교통부",
+    "버스": "국토교통부",
+    "정류장": "국토교통부",
+    "노선": "국토교통부",
+    "배차": "국토교통부",
+    "대중교통": "국토교통부",
+    "어두워": "국토교통부",
+    "어둡": "국토교통부",
+    "조명": "국토교통부",
+    "지뢰밭": "국토교통부",
+    "파였": "국토교통부",
+    "균열": "국토교통부",
+    "상태가 이상": "국토교통부",
+    "불친절": "국토교통부",
+    "난폭": "국토교통부",
+    "공원": "국토교통부",
+    "벤치": "국토교통부",
+    "운동기구": "국토교통부",
+    "붙이": "국토교통부",
+    "광고물": "국토교통부",
+    "전단지": "국토교통부",
 
 
     # 기후에너지환경부 (환경오염·위생)
@@ -93,6 +117,16 @@ KEYWORD_TO_AGENCY = {
     "소음": "기후에너지환경부",
     "진동": "기후에너지환경부",
     "빛공해": "기후에너지환경부",
+    "광공해": "기후에너지환경부",
+    "광공해 신고": "기후에너지환경부",
+    "재활용품": "기후에너지환경부",
+    "시끄러": "기후에너지환경부",
+    "확성기": "기후에너지환경부",
+    "소음이": "기후에너지환경부",
+    "맨홀": "기후에너지환경부",
+    "더러워": "기후에너지환경부",
+    "지저분": "기후에너지환경부",
+    
 
     # 소방청
     "소방": "소방청",
@@ -188,6 +222,8 @@ KEYWORD_TO_AGENCY = {
     "학교폭력": "교육부",
     "체벌": "교육부",
     "선생님": "교육부",
+    "교사": "교육부",
+    "교원": "교육부",
     "학교 선생님": "교육부",
     "학교선생님": "교육부",
     "학생": "교육부",
@@ -200,6 +236,8 @@ KEYWORD_TO_AGENCY = {
     "담임선생님": "교육부",
     "교육과정": "교육부",
     "학사일정": "교육부",
+    "왕따": "교육부",
+    "따돌림": "교육부",
 
 
 
@@ -207,14 +245,17 @@ KEYWORD_TO_AGENCY = {
     # 국방부
     "군대": "국방부",
     "군인": "국방부",
-    "군대": "국방부",
     "수류탄": "국방부",
     "군사기밀": "국방부",
     "군사기밀누설": "국방부",
     "군사기밀누설죄": "국방부",
-    "군사기밀누설죄": "국방부",
     "간첩": "국방부",
     "탈영": "국방부",
+    "예비군": "국방부",
+    "훈련소": "국방부",
+    "입영": "국방부",
+    "입대": "국방부",
+    "사격장": "국방부",
 
 
     # 공정거래위원회 (소비자 피해·불공정)
@@ -266,9 +307,20 @@ KEYWORD_TO_AGENCY = {
     "요양병원": "보건복지부",
     "아동수당": "보건복지부",
 
+    # 대검찰청 / 법무부
+    "검찰": "대검찰청",
+    "검사": "대검찰청",
+    "기소": "대검찰청",
+    "교도소": "법무부",
+    "구치소": "법무부",
+    "가석방": "법무부",
+    "보호관찰": "법무부",
+    "전자발찌": "법무부",
+
     # 여성가족부 
     "한부모": "보건복지부", # 여가부 소관이나 코드가 없다면 복지부로 유도
     "다문화": "보건복지부",
+}
 
 
 # ======================================================
@@ -504,10 +556,23 @@ def classify_complaint(user_query: str) -> dict:
     if query_hint_agency != "기타":
         agency_scores[query_hint_agency] += 3.0
 
+    # 유사 민원 사례집이 검색 결과에 포함되어 있는지 확인
+    top_source_is_example = False
+    for r in results:
+        if "complaint_examples.md" in r.get("source", ""):
+            top_source_is_example = True
+            break
+
     # 4. 검색 결과 점수 합산
     for r in results:
         raw_source = unicodedata.normalize("NFC", r.get("source", ""))
         filename = os.path.basename(raw_source)
+        
+        # UI 표시용 이름 보정
+        display_name = filename
+        if filename == "complaint_examples.md":
+            display_name = "유사 민원 사례집 (AI 학습 데이터)"
+
         rtype = r.get("type", "unknown")
 
         weight = 1.0
@@ -556,7 +621,7 @@ def classify_complaint(user_query: str) -> dict:
 
         # 점수 누적
         agency_scores[matched_agency] += weight
-        source_details.append(f"{filename} ({score_label}: {score_value:.4f})")
+        source_details.append(f"{display_name} ({score_label}: {score_value:.4f})")
 
     # 5. 행안부 과다 방지 게이트
     _apply_mois_guard(user_query, agency_scores)
@@ -567,11 +632,13 @@ def classify_complaint(user_query: str) -> dict:
     agency_code = AGENCY_CODES.get(best_agency, AGENCY_CODES["기타"])
     category = AGENCY_TO_CATEGORY.get(agency_code, "기타")
 
-    reasoning = (
-        f"분석 결과, '{best_agency}' 관련 법령 및 키워드가 가장 높게 나타났습니다."
-        if best_agency != "기타"
-        else "뚜렷한 소관 기관을 특정하기 어려워 '기타'로 분류했습니다."
-    )
+    if best_agency == "기타":
+        reasoning = "뚜렷한 소관 기관을 특정하기 어려워 '기타'로 분류했습니다."
+    else:
+        if top_source_is_example:
+            reasoning = f"유사 민원 사례 분석 결과, '{best_agency}' 소관 업무로 판단됩니다."
+        else:
+            reasoning = f"관련 법령 및 키워드 분석 결과, '{best_agency}' 소관으로 가장 높게 식별되었습니다."
 
     top_source_text = (results[0].get("text", "내용 없음") or "")[:150] + "..."
 

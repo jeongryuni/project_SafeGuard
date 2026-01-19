@@ -81,7 +81,7 @@ frontend/src/
 | :--- | :--- | :--- | :--- |
 | **FR-DASH-01** | 대시보드는 30초 주기로 최신 데이터를 자동 갱신해야 한다. | **Must** | `setInterval` 구현 |
 | **FR-DASH-02** | SLA 준수율, 미처리 잔량 등 KPI 지표를 실시간 계산하여 표시해야 한다. | **Must** | SQL 집계 |
-| **FR-DASH-03** | 발생 후 3일이 경과한 미처리 민원은 'Overdue'로 시각적 경고(Red)를 주어야 한다. | **Must** | `animate-pulse` |
+| **FR-DASH-03** | 발생 후 3일이 경과한 미처리 민원은 'Overdue'로 시각적 경고(Red)를 주어야 한다. | **Must** | `animate-pulse-red` |
 | **FR-DASH-04** | 사용자는 카테고리(교통/안전 등) 및 기간(일/월/년)별로 데이터를 필터링할 수 있어야 한다. | **Should** | Query Param |
 
 ### 비기능 요구사항 (Non-Functional Requirements)
@@ -101,16 +101,16 @@ frontend/src/
 행정 서비스의 핵심 품질 지표로, **"주말/공휴일을 제외한 영업일(Business Days) 기준 3일 이내 처리"**를 원칙으로 합니다.
 *   **Formula (SQL)**: `PostgreSQL generate_series`를 사용하여 휴일을 필터링합니다.
     ```sql
-    ROUND(
-        (COUNT(CASE 
-            WHEN status = 'COMPLETED' AND (
-                -- 주말(0=일, 6=토)을 제외한 실제 영업일수 계산
+    COALESCE(ROUND(
+        (COUNT(DISTINCT CASE 
+            WHEN c.status = 'COMPLETED' AND (
                 SELECT count(*) 
-                FROM generate_series(created_date, completed_date, '1 day') AS d 
+                FROM generate_series(c.created_date::date + 1, c.updated_date::date, '1 day') AS d 
                 WHERE extract(dow from d) NOT IN (0, 6)
-            ) <= 3 THEN 1
-        END)::numeric / NULLIF(total_completed, 0)) * 100, 1
-    )
+            ) <= 3 THEN c.complaint_no 
+        END)::numeric /
+        NULLIF(COUNT(DISTINCT CASE WHEN c.status = 'COMPLETED' THEN c.complaint_no END), 0)) * 100, 1
+    ), 0)
     ```
 
 ### 3.2 미처리 잔량 역산 (Backlog Reverse Calculation)
@@ -130,7 +130,7 @@ frontend/src/
     if (prevCount > 0) {
         rate = ((current - prev) / prev) * 100;
     } else if (prev === 0 && current > 0) {
-        rate = 100; // 0에서 증가 시 100%로 간주 (Infinity 방지)
+        rate = 0; // 차트에서 튀는 현상 방지를 위해 0으로 처리하되, 요약 카드에서는 '신규' 배지 표시
     } else {
         rate = 0;
     }
