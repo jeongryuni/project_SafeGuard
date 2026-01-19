@@ -1,153 +1,6 @@
--- ==========================================
--- SafeGuard Database Initialization Script
--- ==========================================
-
--- 1. 기존 테이블 삭제 (순서 중요: FK 의존성 역순)
-DROP TABLE IF EXISTS error_logs CASCADE;
-DROP TABLE IF EXISTS spatial_feature CASCADE;
-DROP TABLE IF EXISTS complaint_like CASCADE;
-DROP TABLE IF EXISTS post_like CASCADE;
-DROP TABLE IF EXISTS complaint_agency CASCADE;
-DROP TABLE IF EXISTS complaint CASCADE;
-DROP TABLE IF EXISTS app_user CASCADE;
-DROP TABLE IF EXISTS agency CASCADE;
-
--- 2. 테이블 재생성
-
--- Agency (기관)
-CREATE TABLE agency (
-    agency_no BIGSERIAL PRIMARY KEY,
-    agency_type VARCHAR(20) NOT NULL,
-    agency_name VARCHAR(200) NOT NULL,
-    region_code VARCHAR(20),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- AppUser (유저)
-CREATE TABLE app_user (
-    user_no BIGSERIAL PRIMARY KEY,
-    user_id VARCHAR(50) UNIQUE NOT NULL,
-    pw VARCHAR(255) NOT NULL,
-    name VARCHAR(50) NOT NULL,
-    birth_date DATE,
-    addr VARCHAR(300),
-    phone VARCHAR(20),
-    created_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    role VARCHAR(20) NOT NULL DEFAULT 'USER',
-    agency_no BIGINT REFERENCES agency(agency_no)
-);
-
--- Complaint (민원)
-CREATE TABLE complaint (
-    complaint_no BIGSERIAL PRIMARY KEY,
-    category VARCHAR(50) NOT NULL,
-    title VARCHAR(200) NOT NULL,
-    content TEXT NOT NULL,
-    address VARCHAR(300),
-    latitude DOUBLE PRECISION,
-    longitude DOUBLE PRECISION,
-    image_path VARCHAR(500),
-    analysis_result JSONB,
-    status VARCHAR(20) NOT NULL DEFAULT 'UNPROCESSED',
-    is_public BOOLEAN NOT NULL DEFAULT TRUE,
-    created_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_date TIMESTAMPTZ,
-    completed_date TIMESTAMPTZ,
-    user_no BIGINT NOT NULL REFERENCES app_user(user_no) ON DELETE CASCADE,
-    like_count INTEGER DEFAULT 0,
-    answer TEXT
-);
-
--- Complaint Like (좋아요 / 싫어요)
-CREATE TABLE complaint_like (
-    like_id BIGSERIAL PRIMARY KEY,
-    complaint_no BIGINT NOT NULL REFERENCES complaint(complaint_no) ON DELETE CASCADE,
-    user_no BIGINT NOT NULL REFERENCES app_user(user_no) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    type VARCHAR(10) NOT NULL DEFAULT 'LIKE',
-    UNIQUE(complaint_no, user_no)
-);
-
--- Complaint Agency (민원-기관 연결)
-CREATE TABLE complaint_agency (
-    complaint_no BIGINT NOT NULL REFERENCES complaint(complaint_no) ON DELETE CASCADE,
-    agency_no BIGINT NOT NULL REFERENCES agency(agency_no) ON DELETE CASCADE,
-    PRIMARY KEY (complaint_no, agency_no)
-);
-
--- PostGIS Extension (필요 시 생성)
-CREATE EXTENSION IF NOT EXISTS postgis;
-
--- Spatial Feature (공간 정보)
-CREATE TABLE spatial_feature (
-    feature_id BIGSERIAL PRIMARY KEY,
-    feature_type VARCHAR(20),
-    geom GEOMETRY(Geometry, 4326),
-    addr_text VARCHAR(300),
-    complaint_no BIGINT REFERENCES complaint(complaint_no) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- Error Logs (에러 로그)
-CREATE TABLE error_logs (
-    log_id BIGSERIAL PRIMARY KEY,
-    trace_id VARCHAR(100),
-    endpoint VARCHAR(200),
-    http_method VARCHAR(10),
-    client_ip VARCHAR(50),
-    user_id VARCHAR(50),
-    error_code VARCHAR(50),
-    error_message TEXT,
-    stack_trace TEXT,
-    timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. 기초 데이터 삽입 (Agencies)
-INSERT INTO agency (agency_type, agency_name, region_code) VALUES
-  ('LOCAL', '서울특별시', '11'),
-  ('LOCAL', '부산광역시', '26'),
-  ('LOCAL', '대구광역시', '27'),
-  ('LOCAL', '인천광역시', '28'),
-  ('LOCAL', '광주광역시', '29'),
-  ('LOCAL', '대전광역시', '30'),
-  ('LOCAL', '울산광역시', '31'),
-  ('LOCAL', '세종특별자치시', '50'),
-  ('LOCAL', '경기도', '41'),
-  ('LOCAL', '강원특별자치도', '42'),
-  ('LOCAL', '충청북도', '43'),
-  ('LOCAL', '충청남도', '44'),
-  ('LOCAL', '전북특별자치도', '45'),
-  ('LOCAL', '전라남도', '46'),
-  ('LOCAL', '경상북도', '47'),
-  ('LOCAL', '경상남도', '48'),
-  ('LOCAL', '제주특별자치도', '49');
-
-INSERT INTO agency (agency_type, agency_name, region_code) VALUES
-  ('CENTRAL', '경찰청', NULL),
-  ('CENTRAL', '국토교통부', NULL),
-  ('CENTRAL', '고용노동부', NULL),
-  ('CENTRAL', '국방부', NULL),
-  ('CENTRAL', '국민권익위원회', NULL),
-  ('CENTRAL', '식품의약품안전처', NULL),
-  ('CENTRAL', '대검찰청', NULL),
-  ('CENTRAL', '기획재정부', NULL),
-  ('CENTRAL', '행정안전부', NULL),
-  ('CENTRAL', '보건복지부', NULL),
-  ('CENTRAL', '과학기술정보통신부', NULL),
-  ('CENTRAL', '국세청', NULL),
-  ('CENTRAL', '기후에너지환경부', NULL),
-  ('CENTRAL', '법무부', NULL),
-  ('CENTRAL', '공정거래위원회', NULL),
-  ('CENTRAL', '교육부', NULL),
-  ('CENTRAL', '해양수산부', NULL),
-  ('CENTRAL', '농림축산식품부', NULL),
-  ('CENTRAL', '소방청', NULL),
-  ('CENTRAL', '인사혁신처', NULL),
-  ('CENTRAL', '기타', NULL);
-
-
 -- ============================================================
 -- 4. Dummy Data Generation (Users & Complaints)
+-- ※ 주의: 이 스크립트는 'manual_reset.sql' 실행 후 실행해야 합니다.
 -- ============================================================
 
 DO $$
@@ -170,41 +23,42 @@ DECLARE
     v_category TEXT;
     v_status TEXT;
     v_created_at TIMESTAMPTZ;
+    v_rec RECORD; -- For Loop iteration
 BEGIN
+    RAISE NOTICE '1) 사용자 생성 시작...';
     -- 1) 사용자 생성 (2000명)
     INSERT INTO app_user (user_id, pw, name, birth_date, addr, phone, role)
     SELECT 
-        'user' || i AS user_id,
+        'user' || seq AS user_id,
         '$2b$10$Ooc3cQIUzbXrux1X6AoN7e7g1Uf7TdGxPEo/SNPkTuo5IgPhoyh3u' AS pw, -- test1234
         last_names[floor(random() * 20 + 1)] || first_names[floor(random() * 20 + 1)] AS name,
         (CURRENT_DATE - (interval '15 years' + random() * interval '50 years'))::date AS birth_date,
         addresses[floor(random() * 15 + 1)] || ' ' || floor(random() * 1000 + 1) || '번지' AS addr,
         '010-' || LPAD(floor(random() * 10000)::text, 4, '0') || '-' || LPAD(floor(random() * 10000)::text, 4, '0') AS phone,
         'USER' AS role
-    FROM generate_series(1, 2000) AS i
+    FROM generate_series(1, 2000) AS seq
     ON CONFLICT (user_id) DO NOTHING;
 
+    RAISE NOTICE '2) 민원 데이터 생성 시작...';
     -- 2) 민원 데이터 생성 (3000건)
-    --    한국 좌표 범위: 위도 33~38, 경도 126~130 (대략적)
-    --    서울 중심: 37.5, 126.97
     FOR i IN 1..3000 LOOP
         -- 랜덤 유저 선택
         v_user_id := floor(random() * 2000 + 1);
         
         -- 랜덤 좌표 (서울 근방 집중 + 전국 분포)
         IF random() < 0.7 THEN
-             -- 서울/수도권 집중 (37.4 ~ 37.7, 126.8 ~ 127.2)
+             -- 서울/수도권 집중
              v_lat := 37.4 + random() * 0.3;
              v_lng := 126.8 + random() * 0.4;
         ELSE
-             -- 전국 분포 (34.0 ~ 38.0, 126.0 ~ 129.5)
+             -- 전국 분포
              v_lat := 34.0 + random() * 4.0;
              v_lng := 126.0 + random() * 3.5;
         END IF;
 
         v_category := categories[floor(random() * 7 + 1)];
         v_status := statuses[floor(random() * 4 + 1)];
-        -- 최근 3년 내 랜덤 날짜 (사용자 요청 반영)
+        -- 최근 3년 내 랜덤 날짜
         v_created_at := CURRENT_TIMESTAMP - (random() * interval '3 years');
 
         INSERT INTO complaint (
@@ -222,10 +76,7 @@ BEGIN
             v_user_id
         ) RETURNING complaint_no INTO v_complaint_id;
 
-        -- Agency 매핑 (랜덤하게 1개 기관 연결)
-        -- Agency IDs start from a serial, assuming we have inserted about 38 agencies above.
-        -- We'll pick a random ID between 1 and 38 (approx).
-        -- To be safe, we can use a subquery or fixed range if we know serial reset (it is reset by drop table).
+        -- Agency 매핑
         INSERT INTO complaint_agency (complaint_no, agency_no)
         VALUES (
             v_complaint_id,
@@ -241,10 +92,8 @@ BEGIN
 
     END LOOP;
 
-    END LOOP;
-
+    RAISE NOTICE '3) 공간 정보(Spatial Feature) 생성 시작...';
     -- 3) 공간 정보 (Spatial Feature) 생성
-    --    PostGIS가 활성화되어 있으므로 complaint의 lat/lon을 geometry로 변환 저장
     INSERT INTO spatial_feature (feature_type, geom, addr_text, complaint_no, created_at)
     SELECT 
         'POINT',
@@ -254,13 +103,12 @@ BEGIN
         created_date
     FROM complaint;
 
-    -- 4) 좋아요 (Complaint Like) 데이터 생성 (일부 민원에 대해)
-    --    약 30%의 민원에 대해 1~50개의 좋아요 생성
-    FOR v_complaint_id IN (SELECT complaint_no FROM complaint TABLESAMPLE BERNOULLI(30)) LOOP
-         -- 해당 민원에 대해 랜덤 유저들이 좋아요 누름
+    RAISE NOTICE '4) 좋아요(Like) 데이터 생성 시작...';
+    -- 4) 좋아요 (Complaint Like) 데이터 생성
+    FOR v_rec IN (SELECT complaint_no FROM complaint TABLESAMPLE BERNOULLI(30)) LOOP
          INSERT INTO complaint_like (complaint_no, user_no, created_at)
          SELECT 
-             v_complaint_id,
+             v_rec.complaint_no,
              user_no,
              CURRENT_TIMESTAMP - (random() * interval '1 year')
          FROM app_user 
@@ -268,7 +116,8 @@ BEGIN
          LIMIT floor(random() * 50 + 1)
          ON CONFLICT DO NOTHING;
     END LOOP;
-
+    
+    RAISE NOTICE '데이터 생성 완료!';
 END $$;
 
 -- 결과 확인
