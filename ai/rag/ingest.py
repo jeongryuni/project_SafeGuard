@@ -54,22 +54,27 @@ def ingest_pdfs():
     data_texts = []
     data_sources = []
     
-    files = [f for f in os.listdir(rag_data_dir) if f.endswith(".pdf")]
+    files = [f for f in os.listdir(rag_data_dir) if f.endswith((".pdf", ".md", ".txt"))]
     
-    for filename in tqdm(files, desc="Reading PDFs"):
+    for filename in tqdm(files, desc="Reading files"):
         file_path = os.path.join(rag_data_dir, filename)
         text_content = ""
         try:
-            with pdfplumber.open(file_path) as pdf:
-                for page in pdf.pages:
-                    extracted = page.extract_text()
-                    if extracted:
-                        text_content += extracted + "\n"
+            if filename.endswith(".pdf"):
+                with pdfplumber.open(file_path) as pdf:
+                    for page in pdf.pages:
+                        extracted = page.extract_text()
+                        if extracted:
+                            text_content += extracted + "\n"
+            else:
+                # Text or Markdown file
+                with open(file_path, "r", encoding="utf-8") as f:
+                    text_content = f.read()
             
             # Chunking (텍스트 분할)
             for i in range(0, len(text_content), chunk_size - overlap):
                 chunk = text_content[i:i+chunk_size]
-                if len(chunk) > 50: # 너무 짧은 청크는 제외
+                if len(chunk) > 30: # 너무 짧은 청크는 제외 (기준 완화)
                     data_texts.append(chunk)
                     data_sources.append(filename)
                     

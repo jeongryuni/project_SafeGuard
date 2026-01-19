@@ -8,8 +8,8 @@
 본 문서는 **SafeGuard** 프로젝트의 시스템 아키텍처, 기술 스택, 핵심 알고리즘 및 데이터 흐름을 코어 수준에서 상세히 기술한 **시스템 백서(System Whitepaper)**입니다. 현재 구축된 코드베이스(`v1.0`)를 기준으로 작성되었습니다.
 
 - **대상 독자**: 시스템 아키텍트, 백엔드/AI 엔지니어, 프로젝트 이해관계자
-- **문서 버전**: v2.1 (Infra Update: Fargate & EC2 Hybrid)
-- **최종 수정일**: 2026-01-18
+- **문서 버전**: v2.2 (Precision Review & Sync)
+- **최종 수정일**: 2026-01-19
 
 ---
 
@@ -87,7 +87,7 @@ graph TD
         Backend --S3 Protocol--> MinIO[MinIO Object Storage]
         
         Backend --HTTP--> STT["🎙️ AI-STT (Port: 8000)"]
-        Backend --HTTP--> YOLO["📷 AI-YOLO (Port: 5000)"]
+        Backend --HTTP--> YOLO["📷 AI-YOLO (Port: 5001)"]
         Backend --HTTP--> RAG["⚖️ AI-RAG (Port: 8001)"]
         
         STT --Noise Reduction--> FFmpeg
@@ -206,7 +206,7 @@ graph TD
 | Library | Version | Role |
 | :--- | :--- | :--- |
 | **PyMilvus** | v2.3.0 | 고성능 벡터 데이터베이스 클라이언트 |
-| **Sentence-Transformers** | v2.3.0 | 한국어 임베딩 모델 (`snunlp/KR-SBERT` 등) |
+| **Sentence-Transformers** | v2.3.0 | 한국어/다국어 임베딩 모델 (`paraphrase-multilingual-MiniLM-L12-v2`) |
 | **Kiwipiepy** | v0.16.2 | 한국어 형태소 분석기 (명사 추출) |
 | **Rank-BM25** | v0.2.2 | 키워드 기반 검색 알고리즘 |
 
@@ -299,7 +299,7 @@ sequenceDiagram
 ### 5.1 STT 환각/소음 제어 로직
 단순히 모델만 돌리는 것이 아니라, 실제 운영 환경의 잡음을 고려한 전처리 파이프라인이 핵심입니다.
 - **Noise Reduction**: `ffmpeg -af afftdn` 필터를 사용하여 FFT(고속 푸리에 변환) 기반으로 지속적인 배경 소음을 제거합니다.
-- **Whisper Option**: `condition_on_previous_text=False` 설정을 통해 이전 문맥에 의존하여 없는 말을 지어내는 Hallucination 현상을 억제합니다.
+- **Whisper Option**: `condition_on_previous_text=False` 및 `no_speech_threshold=0.6` 설정을 통해 이전 문맥 의존이나 무의미한 환각(Hallucination) 현상을 차단합니다.
 - **Post-Processing**: `UnifiedComplaintManager._filter_hallucination` 함수에서 5글자 미만의 무의미한 결과나 특수문자 반복을 `ValueError` 처리하여 DB 오염을 방지합니다.
 
 ### 5.2 RAG 분류 결정 로직 (Hierarchical Decision)
@@ -310,9 +310,9 @@ sequenceDiagram
 - **RRF (Reciprocal Rank Fusion)** 알고리즘으로 상위 법령 5개 추출 및 재정렬.
 
 #### Step 2: Decision Making (classification_service.py)
-- **Keyword Bonus**: 사용자 질문에 '주차', '소음' 등 강력한 도메인 힌트가 있으면 해당 기관 점수 부스팅 (+1.0 ~ +3.0).
+- **Keyword Bonus**: 사용자 질문에 '주차', '소음' 등 강력한 도메인 힌트가 있으면 해당 기관 점수 부스팅 (+3.0).
 - **Broad Law Penalty**: '민원 처리에 관한 법률', '행정절차법' 등 범용 법령은 가중치를 대폭 낮춤(0.35x).
-- **MOIS Guard (행안부 방어)**: '재난', '등본' 등 특정 문맥이 없으면 행안부 점수를 강제로 제한(Cap)하여 쏠림 방지.
+- **MOIS Guard (행안부 방어)**: '재난', '등본' 등 특정 문맥이 없으면 행안부 점수를 강제로 제한(0.8 Cap)하여 쏠림 방지.
 - **Thresholding**: 1순위와 2순위의 점수 차이가 미미하거나(`Gap < 0.4`), 전체 신뢰도가 낮으면(`Confidence < 0.45`) '기타'로 분류.
 
 ### 5.3 지리정보 시각화 (GIS & Map)
