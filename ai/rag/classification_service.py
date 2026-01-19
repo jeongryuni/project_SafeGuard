@@ -48,6 +48,8 @@ KEYWORD_TO_AGENCY = {
     "신호위반": "경찰청",
     "과속": "경찰청",
     "음주운전": "경찰청",
+    "주차": "경찰청",
+    "불법주차": "경찰청",
     "주차위반": "경찰청",
     "흉기":"경찰청",
     "폭행":"경찰청",
@@ -596,9 +598,9 @@ def classify_complaint(user_query: str) -> dict:
     """
 
     # 1. Hard Rule: 불법주정차는 무조건 경찰청
-    if contains_keyword_ignore_space(user_query, "주정차") and (
+    if (contains_keyword_ignore_space(user_query, "주정차") or contains_keyword_ignore_space(user_query, "주차")) and (
         contains_keyword_ignore_space(user_query, "불법")
-        or any(contains_keyword_ignore_space(user_query, k) for k in ["단속", "신고", "조치"])
+        or any(contains_keyword_ignore_space(user_query, k) for k in ["단속", "신고", "조치", "위반"])
     ):
         return {
             "agency_code": AGENCY_CODES["경찰청"],
