@@ -12,6 +12,7 @@
     },
     "dependencies": {
         "@prisma/client": "^7.2.0",
+        "@turf/turf": "^7.3.2",
         "apexcharts": "^5.3.6",
         "bcryptjs": "^3.0.3",
         "child_process": "^1.0.2",
@@ -32,9 +33,9 @@
     "devDependencies": {
         "@eslint/js": "^9.39.1",
         "@tailwindcss/postcss": "^4.1.18",
+        "@types/node": "^20.11.0",
         "@types/react": "^19.2.5",
         "@types/react-dom": "^19.2.3",
-        "@types/node": "^20.11.0",
         "@vitejs/plugin-react": "^5.1.1",
         "autoprefixer": "^10.4.23",
         "eslint": "^9.39.1",
