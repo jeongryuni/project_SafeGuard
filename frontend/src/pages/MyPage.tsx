@@ -24,7 +24,7 @@ function MyPage() {
 
     // [추가] 페이지네이션 상태
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 4;
 
     const showAlert = (title: string, message: string, onConfirm?: () => void) => {
         setAlertState({ isOpen: true, title, message, onConfirm });
@@ -171,9 +171,9 @@ function MyPage() {
                     <p style={{ color: '#64748B', fontSize: '1.1rem' }}>내 활동 현황과 회원 정보를 관리할 수 있습니다. (목록 당 {ITEMS_PER_PAGE}개 표시)</p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', alignItems: 'stretch' }}>
                     {/* Left: Profile Card */}
-                    <aside style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0' }}>
+                    <aside style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', border: '1px solid #E2E8F0', height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                             <div style={{
                                 width: '100px', height: '100px', borderRadius: '50%', backgroundColor: 'var(--primary-color)',
@@ -187,7 +187,7 @@ function MyPage() {
                             <span style={{ fontSize: '0.9rem', color: '#94A3B8', backgroundColor: '#F1F5F9', padding: '4px 12px', borderRadius: '20px' }}>@{userInfo?.userId}</span>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '30px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', marginBottom: '40px', flex: 1, marginTop: '60px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                                 <div style={iconBoxStyle}><LocationIcon /></div>
                                 <div style={{ flex: 1 }}>
@@ -204,7 +204,7 @@ function MyPage() {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <button onClick={() => setIsEditing(true)} style={actionButtonStyle}>정보 수정</button>
                             <button onClick={() => setIsChangingPw(true)} style={actionButtonStyle}>비밀번호 변경</button>
                             <button onClick={handleDeleteAccount} style={{ ...actionButtonStyle, color: '#EF4444', border: '1px solid #FEE2E2' }}>회원 탈퇴</button>
@@ -238,7 +238,15 @@ function MyPage() {
                         </div>
 
                         {/* Reports List */}
-                        <section style={{ backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+                        <section style={{
+                            backgroundColor: 'white',
+                            padding: '40px',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                            minHeight: '550px', // Header + 4 rows + Pagination space
+                            display: 'flex',
+                            flexDirection: 'column'
+                        }}>
                             <h3 style={{ marginBottom: '20px', color: 'var(--primary-color)' }}>나의 민원 목록</h3>
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -265,9 +273,9 @@ function MyPage() {
                                                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
                                                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                                             >
-                                                <td style={{ padding: '15px', whiteSpace: 'nowrap' }}>{report.complaintNo}</td>
+                                                <td style={{ padding: '18px', whiteSpace: 'nowrap' }}>{report.complaintNo}</td>
                                                 <td style={{
-                                                    padding: '15px',
+                                                    padding: '18px',
                                                     textAlign: 'left',
                                                     fontWeight: '600',
                                                     maxWidth: '250px',
@@ -278,7 +286,7 @@ function MyPage() {
                                                     {report.title}
                                                 </td>
                                                 <td style={{
-                                                    padding: '15px',
+                                                    padding: '18px',
                                                     maxWidth: '200px',
                                                     whiteSpace: 'nowrap',
                                                     overflow: 'hidden',
@@ -286,9 +294,9 @@ function MyPage() {
                                                 }} title={report.address}>
                                                     {report.address}
                                                 </td>
-                                                <td style={{ padding: '15px', whiteSpace: 'nowrap' }}>{new Date(report.createdDate).toLocaleDateString()}</td>
+                                                <td style={{ padding: '18px', whiteSpace: 'nowrap' }}>{new Date(report.createdDate).toLocaleDateString()}</td>
                                                 <td style={{
-                                                    padding: '15px',
+                                                    padding: '18px',
                                                     color: report.status === 'IN_PROGRESS' ? '#EF4444' : (report.status === 'COMPLETED' ? '#16A34A' : '#2563EB'),
                                                     fontWeight: 'bold',
                                                     whiteSpace: 'nowrap'
@@ -304,6 +312,9 @@ function MyPage() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* [추가] 민원이 적을 때 빈 공간 유지 */}
+                            <div style={{ flex: 1 }}></div>
 
                             {/* [추가] 페이지네이션 UI */}
                             {totalPages > 1 && (
