@@ -445,7 +445,6 @@
                 AND c.category = #{category}
             </if>
             AND c.status != 'DELETED'
-            AND c.address LIKE '서울특별시%'
         </where>
     </select>
 
@@ -459,7 +458,6 @@
             <if test="agencyNo != null">
                 AND ca.agency_no = #{agencyNo}
             </if>
-            AND c.address LIKE '서울특별시%'
         </where>
         GROUP BY c.status
     </select>
@@ -580,7 +578,6 @@
                         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.created_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
                         AND c.status != 'DELETED'
-                        AND c.address LIKE '서울특별시%'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -594,7 +591,6 @@
                         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
                         AND c.status != 'DELETED'
-                        AND c.address LIKE '서울특별시%'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -614,7 +610,6 @@
                         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE c.status = 'COMPLETED' 
                         AND TO_CHAR(c.completed_date, 'MM-DD') = TO_CHAR(d, 'MM-DD')
-                        AND c.address LIKE '서울특별시%'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -641,7 +636,6 @@
                         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.created_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
                         AND c.status != 'DELETED'
-                        AND c.address LIKE '서울특별시%'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -655,7 +649,6 @@
                         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
                         AND c.status != 'DELETED'
-                        AND c.address LIKE '서울특별시%'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -675,7 +668,6 @@
                         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
                         WHERE c.status = 'COMPLETED' 
                         AND TO_CHAR(c.completed_date, 'YYYY-MM') = TO_CHAR(d, 'YYYY-MM')
-                        AND c.address LIKE '서울특별시%'
                         <if test="category != null and category != '전체' and category != ''">
                             AND c.category = #{category}
                         </if>
@@ -703,7 +695,6 @@
         FROM complaint c
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         WHERE c.address IS NOT NULL
-        AND c.address LIKE '서울특별시%'
         <if test="agencyNo != null">
             AND ca.agency_no = #{agencyNo}
         </if>
@@ -726,7 +717,6 @@
                 WHERE extract(dow from d) NOT IN (0, 6)
             ) > 3
           AND c.address IS NOT NULL
-          AND c.address LIKE '서울특별시%'
           <if test="agencyNo != null">
               AND ca.agency_no = #{agencyNo}
           </if>
@@ -751,7 +741,6 @@
         JOIN app_user u ON c.user_no = u.user_no
         LEFT JOIN complaint_agency ca ON c.complaint_no = ca.complaint_no
         WHERE u.birth_date IS NOT NULL
-        AND c.address LIKE '서울특별시%'
         <if test="agencyNo != null">
             AND ca.agency_no = #{agencyNo}
         </if>
@@ -792,7 +781,6 @@
                 FROM generate_series(c.created_date::date + 1, CURRENT_DATE, '1 day') AS d 
                 WHERE extract(dow from d) NOT IN (0, 6)
             ) > 3
-          AND c.address LIKE '서울특별시%'
           <if test="agencyNo != null">
               AND ca.agency_no = #{agencyNo}
           </if>
