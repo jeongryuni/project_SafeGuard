@@ -38,6 +38,8 @@
         <if test="req.agencyNo != null">
             AND ca.agency_no = #{req.agencyNo}
         </if>
+        <!-- [추가] 삭제된 민원 제외 -->
+        AND c.status != 'DELETED'
     </sql>
 
     <!-- markers -->
