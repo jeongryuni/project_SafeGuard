@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, sttAPI, getToken, analyzeText } from '../utils/api';
 import Modal from '../components/common/Modal';
+import AiAnalyzeTooltip from '../components/common/AiAnalyzeTooltip';
 
 function ApplyVoice() {
     const navigate = useNavigate();
@@ -378,9 +379,24 @@ function ApplyVoice() {
         }).open();
     };
 
+    // AI 가이드 상태
+    const [showAiGuide, setShowAiGuide] = useState(false);
+
+    // AI 가이드 자동 표시
+    useEffect(() => {
+        if (!ragResult && formData.content && formData.content.trim().length > 0) {
+            setShowAiGuide(true);
+        } else {
+            setShowAiGuide(false);
+        }
+    }, [formData.content, ragResult]);
+
     /** RAG 분석 */
     const handleAnalyze = async () => {
         if (!formData.content) return;
+
+        setShowAiGuide(false); // 가이드 숨김
+
         setIsAnalyzing(true);
         try {
             const result = await analyzeText(formData.content);
@@ -893,7 +909,7 @@ function ApplyVoice() {
                         backgroundColor: 'white',
                         borderRadius: '20px',
                         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                        overflow: 'hidden',
+                        // overflow: 'hidden', // 툴팁 잘림 방지
                         height: 'fit-content',
                         position: 'sticky',
                         top: '100px'
@@ -902,7 +918,9 @@ function ApplyVoice() {
                             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                             padding: '20px',
                             color: 'white',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            borderTopLeftRadius: '20px',
+                            borderTopRightRadius: '20px'
                         }}>
                             <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 분석 결과</h3>
@@ -934,41 +952,35 @@ function ApplyVoice() {
                                     {ragResult ? ragResult.agency_name : '-'}
                                 </div>
                             </div>
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={isAnalyzing || !formData.content}
-                                style={{
-                                    width: '100%',
-                                    padding: '16px',
-                                    background: (isAnalyzing || !formData.content) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    fontSize: '1rem',
-                                    fontWeight: '700',
-                                    cursor: (isAnalyzing || !formData.content) ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                {isAnalyzing ? '분석 중...' : '🤖 AI 분석하기'}
-                            </button>
 
-                            {!ragResult && (
-                                <div style={{
-                                    marginTop: '20px',
-                                    padding: '14px',
-                                    backgroundColor: '#f0fdf4',
-                                    borderRadius: '12px',
-                                    textAlign: 'center'
-                                }}>
-                                    <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ AI가 민원을 자동으로 분류합니다</span>
-                                </div>
-                            )}
+                            <div style={{ position: 'relative' }}>
+                                {showAiGuide && <AiAnalyzeTooltip />}
+                                <button
+                                    onClick={handleAnalyze}
+                                    disabled={isAnalyzing || !formData.content}
+                                    style={{
+                                        width: '100%',
+                                        padding: '16px',
+                                        background: (isAnalyzing || !formData.content) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        fontWeight: '700',
+                                        cursor: (isAnalyzing || !formData.content) ? 'not-allowed' : 'pointer',
+                                        boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                                        transition: 'all 0.3s'
+                                    }}
+                                >
+                                    {isAnalyzing ? '분석 중...' : '🤖 AI 분석하기'}
+                                </button>
+                            </div>
+
+
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* 공통 모달 적용 */}
             <Modal

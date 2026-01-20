@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, getToken, analyzeText } from '../utils/api';
 import Modal from '../components/common/Modal';
+import AiAnalyzeTooltip from '../components/common/AiAnalyzeTooltip';
 
 const MAX_CONTENT_LENGTH = 1000;
 
@@ -243,20 +244,29 @@ function ApplyText() {
         }).open();
     };
 
+    const [showAiGuide, setShowAiGuide] = useState(false);
+
+    // AI 가이드 자동 표시
+    useEffect(() => {
+        if (!aiResult && formData.content.length >= 8) {
+            setShowAiGuide(true);
+        } else {
+            setShowAiGuide(false);
+        }
+    }, [formData.content, aiResult]);
+
     const handleAnalyze = async () => {
         if (!formData.content || formData.content.length < 8) {
             showAlert('알림', '민원 내용을 8자 이상 입력해주세요.');
             return;
         }
 
+        setShowAiGuide(false); // 가이드 숨김
 
         setAnalyzing(true);
         try {
             const result = await analyzeText(formData.content);
             setAiResult(result);
-
-
-
         } catch (err: any) {
             showAlert('오류', 'AI 분석에 실패했습니다: ' + err.message);
         } finally {
@@ -685,7 +695,7 @@ function ApplyText() {
                         backgroundColor: 'white',
                         borderRadius: '20px',
                         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                        overflow: 'hidden',
+                        // overflow: 'hidden', // 툴팁 잘림 방지
                         height: 'fit-content',
                         position: 'sticky',
                         top: '100px'
@@ -694,7 +704,9 @@ function ApplyText() {
                             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                             padding: '20px',
                             color: 'white',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            borderTopLeftRadius: '20px',
+                            borderTopRightRadius: '20px'
                         }}>
                             <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 분석 결과</h3>
@@ -730,37 +742,30 @@ function ApplyText() {
                             </div>
 
                             {/* 민원 접수하기 버튼 (여기로 이동됨) */}
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={analyzing || !formData.content || formData.content.length < 8}
-                                style={{
-                                    width: '100%',
-                                    padding: '16px',
-                                    background: (analyzing || !formData.content || formData.content.length < 8) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    fontSize: '1rem',
-                                    fontWeight: '700',
-                                    cursor: (analyzing || !formData.content || formData.content.length < 8) ? 'not-allowed' : 'pointer',
-                                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                {analyzing ? '분석 중...' : '🤖 AI 분석하기'}
-                            </button>
+                            <div style={{ position: 'relative' }}>
+                                {showAiGuide && <AiAnalyzeTooltip />}
+                                <button
+                                    onClick={handleAnalyze}
+                                    disabled={analyzing || !formData.content || formData.content.length < 8}
+                                    style={{
+                                        width: '100%',
+                                        padding: '16px',
+                                        background: (analyzing || !formData.content || formData.content.length < 8) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        fontWeight: '700',
+                                        cursor: (analyzing || !formData.content || formData.content.length < 8) ? 'not-allowed' : 'pointer',
+                                        boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)',
+                                        transition: 'all 0.3s'
+                                    }}
+                                >
+                                    {analyzing ? '분석 중...' : '🤖 AI 분석하기'}
+                                </button>
+                            </div>
 
-                            {!aiResult && (
-                                <div style={{
-                                    marginTop: '20px',
-                                    padding: '14px',
-                                    backgroundColor: '#f0fdf4',
-                                    borderRadius: '12px',
-                                    textAlign: 'center'
-                                }}>
-                                    <span style={{ fontSize: '0.85rem', color: '#16a34a' }}>✨ AI가 민원을 자동으로 분류합니다</span>
-                                </div>
-                            )}
+
                         </div>
                     </div>
                 </div>
