@@ -909,7 +909,7 @@ function ApplyVoice() {
                         backgroundColor: 'white',
                         borderRadius: '20px',
                         boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                        overflow: 'hidden',
+                        // overflow: 'hidden', // 툴팁 잘림 방지
                         height: 'fit-content',
                         position: 'sticky',
                         top: '100px'
@@ -918,7 +918,9 @@ function ApplyVoice() {
                             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
                             padding: '20px',
                             color: 'white',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            borderTopLeftRadius: '20px',
+                            borderTopRightRadius: '20px'
                         }}>
                             <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🤖</div>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>AI 분석 결과</h3>
