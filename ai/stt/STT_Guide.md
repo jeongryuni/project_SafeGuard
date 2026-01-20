@@ -23,7 +23,7 @@ FastAPI로 구현되어 있으며, Docker 컨테이너 환경(`safeguard-ai-stt`
 | **Language** | Python 3.9 | AI 서비스 메인 언어 |
 | **Framework** | FastAPI | 고성능 API 서버 구축 |
 | **AI Model** | OpenAI Whisper (base) | 음성 인식 (Speech-to-Text) |
-| **Audio Proc** | FFmpeg (afftdn) | 오디오 잡음 제거 및 포맷 변환 |
+| **Audio Proc** | FFmpeg (afftdn), ffmpeg-normalize | 잡음 제거, 볼륨 정규화 및 리샘플링 |
 | **Infra** | Docker | 컨테이너 기반 배포 |
 | **Frontend** | React, Web Speech API | 사용자 인터페이스 및 실시간 자막 미리보기 |
 
@@ -53,9 +53,11 @@ FastAPI로 구현되어 있으며, Docker 컨테이너 환경(`safeguard-ai-stt`
 
 ## 3. 핵심 기술 및 알고리즘 (Core Technology)
 
-### 3.1. 오디오 전처리 (Noise Reduction)
-**문제**: 야외에서 녹음 시 바람 소리나 차량 소음이 섞여 인식률이 떨어집니다.
-**해결**: `ffmpeg`의 `afftdn` (FFT 기반 노이즈 제거) 필터를 사용하여 사람의 목소리만 선명하게 남깁니다.
+### 3.1. 오디오 전처리 (Audio Preprocessing)
+**문제**: 야외에서 녹음 시 바람 소리나 차량 소음이 섞여 인식률이 떨어지고, 녹음 기기마다 볼륨 크기가 달라 인식이 불안정합니다.
+**해결 (2단계 처리)**:
+1. **소음 제거**: `ffmpeg`의 `afftdn` (FFT 기반 노이즈 제거) 필터를 사용하여 사람의 목소리만 남깁니다.
+2. **볼륨 정규화**: `ffmpeg-normalize`를 사용하여 음압을 최적화하고, Whisper 최적 주파수인 **16kHz**로 리샘플링합니다.
 
 ### 3.2. Whisper 모델 (AI STT)
 **모델**: `base` 모델 사용 (CPU/GPU 효율성 고려)
@@ -105,7 +107,7 @@ FastAPI로 구현되어 있으며, Docker 컨테이너 환경(`safeguard-ai-stt`
 flowchart TD
     start_node([1. 요청 수신]) --> CheckInput{입력 타입 확인}
     
-    CheckInput -- "Audio File" --> Preproc[2. Audio 전처리<br/>(FFmpeg Noise Reduction)]
+    CheckInput -- "Audio File" --> Preproc[2. Audio 전처리<br/>(FFmpeg Noise Reduction + Normalize)]
     Preproc --> Whisper[3. Whisper STT 변환]
     Whisper --> Filter{4. 환각 필터링}
     
@@ -130,8 +132,8 @@ flowchart TD
 
 **처리 단계 상세 설명**:
 1.  **입력**: 음성 파일 경로(`file_path`) 또는 텍스트(`provided_text`)
-2.  **STT**: 음성이면 텍스트로 변환 (Whisper)
-3.  **전처리**: 공백 제거 및 정규화
+2.  **STT**: 음성이면 텍스트로 변환 (Whisper). 단, 텍스트가 이미 제공된 경우 **STT 과정을 건너뛰는 최적화(Priority Check)** 수행.
+3.  **전처리**: `ffmpeg-normalize`를 통한 볼륨 평탄화 및 16kHz 정규화.
 4.  **분류**:
     - **RAG 연동**: 정규화된 텍스트를 RAG 서버(`ai-rag`)로 전송.
     - **Fallback**: RAG 서버 장애 시 내장된 키워드 매칭 로직(`_classify_agency_keyword`) 수행.
@@ -278,8 +280,8 @@ docker run -p 8000:8000 safeguard-ai-stt
 ## 13. 운영 및 모니터링 (Operations & Monitoring)
 
 ### 13.1 모니터링 지표 (Prometheus)
-- **`stt_processing_time_seconds`**: 오디오 길이 대비 처리 시간 비율.
-- **`hallucination_blocked_total`**: 환각 필터에 의해 차단된 횟수 카운트.
+- **`http_request_duration_seconds`**: 각 API 엔드포인트별 처리 시간 (Latency).
+- **`http_requests_total`**: 성공/실패 여부를 포함한 전체 요청 횟수.
 
 ---
 
