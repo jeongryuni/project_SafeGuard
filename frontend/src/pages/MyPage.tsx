@@ -378,15 +378,34 @@ function MyPage() {
                                     >
                                         이전
                                     </button>
-                                    {[...Array(totalPages)].map((_, i) => (
-                                        <button
-                                            key={i + 1}
-                                            onClick={() => setCurrentPage(i + 1)}
-                                            style={pageNumberButtonStyle(currentPage === i + 1)}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    ))}
+
+                                    {/* Sliding Pagination Logic */}
+                                    {(() => {
+                                        const pageGroupSize = 10;
+                                        let startPage = Math.max(1, currentPage - Math.floor(pageGroupSize / 2));
+                                        let endPage = startPage + pageGroupSize - 1;
+
+                                        if (endPage > totalPages) {
+                                            endPage = totalPages;
+                                            startPage = Math.max(1, endPage - pageGroupSize + 1);
+                                        }
+
+                                        const visiblePages = [];
+                                        for (let i = startPage; i <= endPage; i++) {
+                                            visiblePages.push(i);
+                                        }
+
+                                        return visiblePages.map((pageNum) => (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                style={pageNumberButtonStyle(currentPage === pageNum)}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        ));
+                                    })()}
+
                                     <button
                                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                         disabled={currentPage === totalPages}
