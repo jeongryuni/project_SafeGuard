@@ -788,7 +788,7 @@ function MapView() {
             borderRadius: '24px',
             overflow: 'hidden',
             boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-            height: '1000px',
+            height: '800px',
             position: 'relative'
           }}>
             <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }}>
@@ -1044,7 +1044,7 @@ function MapView() {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
-            height: '1000px'
+            height: '800px'
           }}>
             <div style={{
               padding: '24px',
