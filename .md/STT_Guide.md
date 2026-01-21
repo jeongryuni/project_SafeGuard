@@ -290,4 +290,3 @@ docker run -p 8000:8000 safeguard-ai-stt
 - **Unit Test**: `_filter_hallucination` 함수의 경계값 테스트 (4글자, 특수문자 등).
 - **Integration Test**: 실제 오디오 파일(`test.mp3`) 업로드 후 변환 결과의 정확도 검증.
 - **Scenario Test**: 바람 소리가 섞인 야외 녹음 데이터를 사용하여 FFmpeg 필터 동작 확인.
-

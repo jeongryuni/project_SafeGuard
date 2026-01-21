@@ -47,7 +47,7 @@ ai/yolo/
 ├── app.py                      # FastAPI 메인 애플리케이션 (Entrypoint)
 ├── analyze_image.py            # YOLO 추론 및 로직 래퍼 (Core Logic)
 ├── infer_image_complaint.pt    # Custom Fine-tuned YOLO 모델 가중치 파일
-├── best.pt                     # (Backup) 학습 최고 성능 모델 체크포인트
+├── best.pt                     # 학습 최고 성능 모델 체크포인트
 ├── Dockerfile                  # 컨테이너 빌드 설정
 └── requirements.txt            # Python 의존성 목록
 ```
@@ -221,4 +221,3 @@ uvicorn app:app --host 0.0.0.0 --port 5000 --reload
 
 ---
 **[End of Document]**
-

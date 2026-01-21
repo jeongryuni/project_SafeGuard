@@ -83,11 +83,9 @@ def _normalize_vector_score(distance_value: float, metric_type: str = "COSINE") 
     if m == "COSINE":
         v = float(distance_value)
 
-        # 1.0을 넘으면 거리(Distance)로 간주하여 변환
-        if v > 1.0:
-            score = 1.0 - v
-        else:
-            score = v
+        # 1.0을 넘으면 거리(Distance)로 간주되어 변환
+        # v가 0에 가까울수록 유사도가 높은 것이므로 1.0 - v로 반전시켜야 함
+        score = 1.0 - v
 
         # 음수는 0으로 처리
         return max(0.0, float(score))

@@ -255,9 +255,9 @@ const ComplaintTrendChart: React.FC<ChartOneProps> = ({ selectedCategory, timeBa
 
             {/* KPI 행: flex 레이아웃으로 하단 차트와 너비 동기화 */}
             <div style={{ display: 'flex', gap: 24, width: '100%', boxSizing: 'border-box' }}>
-                {/* 1. 현재 미처리 건수 */}
+                {/* 1. 미완료 총건수 */}
                 <KpiCard
-                    title="현재 미처리 건수"
+                    title="미처리 + 처리중"
                     value={`${backlogStats.current} 건`}
                     sub={backlogSubText}
                     color='#3B82F6' // 혼동 방지를 위해 정적 파란색(Blue) 사용
