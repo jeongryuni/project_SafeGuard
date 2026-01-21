@@ -16,6 +16,7 @@ import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Modal from './components/common/Modal'; // Modal Import
+import NotificationBell from './components/common/NotificationBell';
 import { agenciesAPI } from './utils/api';
 import './index.css';
 
@@ -103,7 +104,20 @@ function App() {
       <div className={`app ${isAdminUser ? 'admin-theme' : ''}`}>
         {/* Top Bar */}
         <div className="top-bar">
-          <div className="container" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div
+            className="container"
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '12px',
+              position: 'relative'
+            }}
+          >
+            {token && role === 'USER' && (
+              <NotificationBell />
+            )}
+
             <div className="top-bar__links">
               {token ? (
                 <>
