@@ -298,7 +298,7 @@ function List() {
                                     boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
                                 }}
                             >
-                                📊 엑셀 다운로드
+                                📊 CSV 다운로드
                             </button>
                         )}
                     </div>
