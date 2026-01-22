@@ -313,7 +313,7 @@ function Detail() {
 
                             <div style={{ display: 'flex', gap: '12px', color: '#64748b', fontSize: '0.9rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                    <span>👤</span> {report.isMyPost ? maskName(report.authorName) : '익명'}
+                                    <span>👤</span>  {maskName(report.authorName)}
                                 </div>
                                 <div style={{ width: '1px', height: '12px', backgroundColor: '#e2e8f0' }}></div>
                                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
