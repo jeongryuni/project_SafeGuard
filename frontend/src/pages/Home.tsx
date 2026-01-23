@@ -129,7 +129,7 @@ function Home({ showAlert }: HomeProps) {
                 }}></div>
 
                 <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🏛️</div>
+
                     <h1 style={{
                         fontSize: '3rem',
                         fontWeight: '800',
