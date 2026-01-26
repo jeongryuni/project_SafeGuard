@@ -484,7 +484,9 @@ function MapView() {
       let distName = '';
       let isMergedCity = false;
 
-      if (sidonm.includes('광역시') || sidonm === '세종특별자치시') {
+      if (sidonm === '서울특별시') {
+        distName = `${sidonm} ${sggnm}`;
+      } else if (sidonm.includes('광역시') || sidonm === '세종특별자치시') {
         distName = sidonm;
       } else {
         // "청주시상당구" -> "청주시" 추출
